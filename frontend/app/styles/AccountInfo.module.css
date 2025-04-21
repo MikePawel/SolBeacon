@@ -1,0 +1,35 @@
+.accountInfo {
+  width: 100%;
+  padding: 1rem 2rem;
+  margin-top: 4rem;
+  background: var(--gray-50);
+}
+
+.infoCard {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.infoItem {
+  flex: 1;
+}
+
+.infoItem h3 {
+  font-size: 0.875rem;
+  color: var(--gray-700);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.infoItem p {
+  font-size: 1rem;
+  color: var(--gray-800);
+  font-family: monospace;
+  word-break: break-all;
+}

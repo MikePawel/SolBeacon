@@ -1,0 +1,45 @@
+.controlPanel {
+  width: 100%;
+  padding: 1rem 2rem;
+  margin-top: 4rem;
+  background: var(--gray-50);
+}
+
+.controlCard {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.controlCard h2 {
+  font-size: 1.25rem;
+  color: var(--gray-800);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.buttonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.button {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  color: var(--gray-700);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--gray-200);
+  transform: translateY(-1px);
+}
