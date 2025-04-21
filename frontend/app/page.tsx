@@ -50,7 +50,7 @@ const verifier = "w3a-firebase-demo";
 // IMP START - Chain Config
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
-  chainId: "0x5afe",
+  chainId: "0x5aff",
   rpcTarget: "https://testnet.sapphire.oasis.io",
   displayName: "Oasis Sapphire Testnet",
   blockExplorerUrl: "https://explorer.oasis.io/testnet/sapphire",
@@ -67,7 +67,7 @@ let evmProvider: EthereumSigningProvider;
 if (typeof window !== "undefined") {
   coreKitInstance = new Web3AuthMPCCoreKit({
     web3AuthClientId,
-    web3AuthNetwork: WEB3AUTH_NETWORK.MAINNET,
+    web3AuthNetwork: WEB3AUTH_NETWORK.DEVNET,
     storage: window.localStorage,
     manualSync: true, // This is the recommended approach
     tssLib,
@@ -195,7 +195,7 @@ function App() {
       // Create a temporary instance of the MPC Core Kit, used to create an encryption key for the Social Factor
       const tempCoreKitInstance = new Web3AuthMPCCoreKit({
         web3AuthClientId,
-        web3AuthNetwork: WEB3AUTH_NETWORK.MAINNET,
+        web3AuthNetwork: WEB3AUTH_NETWORK.DEVNET,
         storage: window.localStorage,
         tssLib,
       });
