@@ -1,0 +1,216 @@
+.wallet-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: #334155;
+}
+
+.wallet-page h1 {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 2.2rem;
+}
+
+.wallet-page h2 {
+  color: #2c3e50;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.wallet-page h3 {
+  color: #4b5563;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* Loading indicator */
+.wallet-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.wallet-loading p {
+  color: #64748b;
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.loader {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-bottom-color: #6366f1;
+  border-radius: 50%;
+  display: inline-block;
+  animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Login section */
+.login-section {
+  text-align: center;
+  padding: 4rem 0;
+}
+
+.login-section p {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  color: #64748b;
+}
+
+/* Wallet content when connected */
+.wallet-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Header with wallet info */
+.wallet-header {
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.network-info {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.network-label,
+.address-label,
+.balance-label {
+  color: #64748b;
+  margin-right: 0.5rem;
+  font-weight: 500;
+}
+
+.network-value,
+.address-value,
+.balance-value {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.account-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.address-display,
+.balance-display {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+}
+
+.balance-value {
+  color: #10b981;
+}
+
+/* Action container */
+.action-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.action-group h3 {
+  margin-bottom: 0.75rem;
+}
+
+.session-row {
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+}
+
+/* Buttons */
+.wallet-action-button {
+  padding: 0.6rem 1rem;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: left;
+  margin-bottom: 0.5rem;
+}
+
+.wallet-action-button:hover {
+  background-color: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.login-button {
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.logout-button {
+  background-color: #ef4444;
+  min-width: 200px;
+  text-align: center;
+}
+
+.logout-button:hover {
+  background-color: #dc2626;
+}
+
+/* Console output */
+.console-output {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.console-output h3 {
+  margin-bottom: 1rem;
+}
+
+.console-output pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: "Menlo", "Monaco", "Courier New", monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #475569;
+  overflow-x: auto;
+}
