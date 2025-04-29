@@ -11,6 +11,7 @@ import {
 import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
 import { getDefaultExternalAdapters } from "@web3auth/default-solana-adapter";
 import RPC from "../../solanaRPC";
+import apiService from "../../services/api";
 import "./wallet.css";
 
 // Constants
@@ -31,6 +32,11 @@ export default function Wallet() {
   const [walletBalance, setWalletBalance] = useState<string>("");
   const [solBalance, setSolBalance] = useState<string>("0");
   const [chainInfo, setChainInfo] = useState<any>(null);
+
+  // API data state
+  const [apiData, setApiData] = useState<any>(null);
+  const [apiLoading, setApiLoading] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Get custom chain configs for your chain
   const chainConfig = getSolanaChainConfig(0x3)!; // 0x3 Solana Devnet
@@ -378,151 +384,194 @@ export default function Wallet() {
     uiConsole("Chain Switched");
   };
 
+  // Function to fetch users from the API
+  const fetchUsers = async () => {
+    try {
+      setApiLoading(true);
+      setApiError(null);
+      const users = await apiService.getUsers();
+      setApiData(users);
+      uiConsole("API Users fetched:", users);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      setApiError(`Failed to fetch users: ${errorMessage}`);
+      uiConsole("API Error:", errorMessage);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   function uiConsole(...args: any[]): void {
-    const output = JSON.stringify(args || {}, null, 2);
-    setConsoleOutput(output);
+    const logMessage = args
+      .map((arg) => {
+        if (typeof arg === "object") {
+          return JSON.stringify(arg, null, 2);
+        }
+        return String(arg);
+      })
+      .join(" ");
+
+    setConsoleOutput(logMessage);
   }
+
+  const loggedInView = (
+    <div className="wallet-content">
+      {/* Wallet Summary */}
+      <div className="wallet-header">
+        <div className="network-info">
+          <span className="network-label">Network:</span>
+          <span className="network-value">{chainInfo?.displayName}</span>
+        </div>
+        <div className="account-info">
+          <div className="address-display">
+            <span className="address-label">Address:</span>
+            <span className="address-value">{walletAddress}</span>
+          </div>
+          <div className="balance-display">
+            <span className="balance-label">Balance:</span>
+            <span className="balance-value">{solBalance} SOL</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Groups */}
+      <div className="action-container">
+        <h2>Wallet Actions</h2>
+
+        <div className="action-row">
+          <div className="action-group">
+            <h3>Account</h3>
+            <button onClick={getUserInfo} className="wallet-action-button">
+              Get User Info
+            </button>
+            <button onClick={getAccounts} className="wallet-action-button">
+              Refresh Address
+            </button>
+            <button onClick={getBalance} className="wallet-action-button">
+              Refresh Balance
+            </button>
+            <button onClick={authenticateUser} className="wallet-action-button">
+              Get ID Token
+            </button>
+          </div>
+
+          <div className="action-group">
+            <h3>Transactions</h3>
+            <button onClick={sendTransaction} className="wallet-action-button">
+              Send Transaction
+            </button>
+            <button
+              onClick={sendVersionTransaction}
+              className="wallet-action-button"
+            >
+              Send Version Transaction
+            </button>
+            <button onClick={signMessage} className="wallet-action-button">
+              Sign Message
+            </button>
+            <button onClick={getPrivateKey} className="wallet-action-button">
+              Get Private Key
+            </button>
+          </div>
+        </div>
+
+        <div className="action-row">
+          <div className="action-group">
+            <h3>Chain Management</h3>
+            <button onClick={addChain} className="wallet-action-button">
+              Add Chain
+            </button>
+            <button onClick={switchChain} className="wallet-action-button">
+              Switch Chain
+            </button>
+            <button onClick={getChainInfo} className="wallet-action-button">
+              Refresh Chain Info
+            </button>
+          </div>
+
+          <div className="action-group">
+            <h3>Advanced Signing</h3>
+            <button
+              onClick={signVersionedTransaction}
+              className="wallet-action-button"
+            >
+              Sign Versioned Transaction
+            </button>
+            <button
+              onClick={signAllVersionedTransaction}
+              className="wallet-action-button"
+            >
+              Sign All Versioned Transactions
+            </button>
+            <button
+              onClick={signAllTransaction}
+              className="wallet-action-button"
+            >
+              Sign All Transactions
+            </button>
+          </div>
+        </div>
+
+        <div className="action-row session-row">
+          <button
+            onClick={logout}
+            className="wallet-action-button logout-button"
+          >
+            Disconnect Wallet
+          </button>
+        </div>
+      </div>
+
+      {/* API Integration Section */}
+      <div className="api-section">
+        <h2>API Integration</h2>
+        <div className="action-card">
+          <h3>Test API Connection</h3>
+          <button onClick={fetchUsers} disabled={apiLoading}>
+            {apiLoading ? "Loading..." : "Fetch Users"}
+          </button>
+
+          {apiError && <div className="api-error">{apiError}</div>}
+
+          {apiData && (
+            <div className="api-results">
+              <h4>API Results:</h4>
+              <pre>{JSON.stringify(apiData, null, 2)}</pre>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const unloggedInView = (
+    <div className="login-section">
+      <p>Connect your wallet to access your dashboard</p>
+      <button onClick={login} className="wallet-action-button login-button">
+        Connect Wallet
+      </button>
+    </div>
+  );
 
   return (
     <div className="wallet-page">
       <h1>Wallet Dashboard</h1>
-
       {loading ? (
         <div className="wallet-loading">
           <div className="loader"></div>
           <p>Loading wallet information...</p>
         </div>
-      ) : !loggedIn ? (
-        <div className="login-section">
-          <p>Connect your wallet to access your dashboard</p>
-          <button onClick={login} className="wallet-action-button login-button">
-            Connect Wallet
-          </button>
-        </div>
+      ) : loggedIn ? (
+        <>{loggedInView}</>
       ) : (
-        <div className="wallet-content">
-          {/* Wallet Summary */}
-          <div className="wallet-header">
-            <div className="network-info">
-              <span className="network-label">Network:</span>
-              <span className="network-value">{chainInfo?.displayName}</span>
-            </div>
-            <div className="account-info">
-              <div className="address-display">
-                <span className="address-label">Address:</span>
-                <span className="address-value">{walletAddress}</span>
-              </div>
-              <div className="balance-display">
-                <span className="balance-label">Balance:</span>
-                <span className="balance-value">{solBalance} SOL</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Groups */}
-          <div className="action-container">
-            <h2>Wallet Actions</h2>
-
-            <div className="action-row">
-              <div className="action-group">
-                <h3>Account</h3>
-                <button onClick={getUserInfo} className="wallet-action-button">
-                  Get User Info
-                </button>
-                <button onClick={getAccounts} className="wallet-action-button">
-                  Refresh Address
-                </button>
-                <button onClick={getBalance} className="wallet-action-button">
-                  Refresh Balance
-                </button>
-                <button
-                  onClick={authenticateUser}
-                  className="wallet-action-button"
-                >
-                  Get ID Token
-                </button>
-              </div>
-
-              <div className="action-group">
-                <h3>Transactions</h3>
-                <button
-                  onClick={sendTransaction}
-                  className="wallet-action-button"
-                >
-                  Send Transaction
-                </button>
-                <button
-                  onClick={sendVersionTransaction}
-                  className="wallet-action-button"
-                >
-                  Send Version Transaction
-                </button>
-                <button onClick={signMessage} className="wallet-action-button">
-                  Sign Message
-                </button>
-                <button
-                  onClick={getPrivateKey}
-                  className="wallet-action-button"
-                >
-                  Get Private Key
-                </button>
-              </div>
-            </div>
-
-            <div className="action-row">
-              <div className="action-group">
-                <h3>Chain Management</h3>
-                <button onClick={addChain} className="wallet-action-button">
-                  Add Chain
-                </button>
-                <button onClick={switchChain} className="wallet-action-button">
-                  Switch Chain
-                </button>
-                <button onClick={getChainInfo} className="wallet-action-button">
-                  Refresh Chain Info
-                </button>
-              </div>
-
-              <div className="action-group">
-                <h3>Advanced Signing</h3>
-                <button
-                  onClick={signVersionedTransaction}
-                  className="wallet-action-button"
-                >
-                  Sign Versioned Transaction
-                </button>
-                <button
-                  onClick={signAllVersionedTransaction}
-                  className="wallet-action-button"
-                >
-                  Sign All Versioned Transactions
-                </button>
-                <button
-                  onClick={signAllTransaction}
-                  className="wallet-action-button"
-                >
-                  Sign All Transactions
-                </button>
-              </div>
-            </div>
-
-            <div className="action-row session-row">
-              <button
-                onClick={logout}
-                className="wallet-action-button logout-button"
-              >
-                Disconnect Wallet
-              </button>
-            </div>
-          </div>
-
-          {/* Console Output */}
-          <div className="console-output">
-            <h3>Console Output</h3>
-            <pre>{consoleOutput}</pre>
-          </div>
-        </div>
+        unloggedInView
       )}
+
+      <div className="console-output">
+        <h3>Console Output</h3>
+        <pre>{consoleOutput}</pre>
+      </div>
     </div>
   );
 }
