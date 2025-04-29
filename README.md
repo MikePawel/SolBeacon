@@ -10,13 +10,13 @@
 cd backend
 ```
 
-1.  Start the server with MongoDB and API endpoints:
+2.  Start the server with MongoDB and API endpoints:
 
 ```
 npm run dev
 ```
 
-1.  The Swagger documentation will be available at:
+3.  The Swagger documentation will be available at:
 
 ```
 http://localhost:3000/api-docs/
@@ -30,13 +30,13 @@ http://localhost:3000/api-docs/
 cd Solana-frontend
 ```
 
-1.  Start the frontend development server:
+2.  Start the frontend development server:
 
 ```
 npm run dev
 ```
 
-1.  The frontend application will be available at:
+3.  The frontend application will be available at:
 
 ```
 http://localhost:5174/
