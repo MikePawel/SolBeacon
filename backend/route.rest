@@ -1,0 +1,19 @@
+GET http://localhost:3000/users 
+
+###
+GET http://localhost:3000/users/0x1234567890123456789012345678901234567890
+
+
+####
+
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+    "walletAddress": "212121212121212132121sd21212121212121212121"
+}
+
+###
+
+DELETE http://localhost:3000/users/21212121212121213212121212121212121212121   
+
