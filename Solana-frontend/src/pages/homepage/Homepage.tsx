@@ -1,59 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Web3Auth } from "@web3auth/modal";
-import { getSolanaChainConfig } from "@web3auth/base";
-import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
-import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from "@web3auth/base";
-import RPC from "../../solanaRPC";
+import React from "react";
 import "./Homepage.css";
 
-// Constants
-const clientId =
-  "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ";
-
 export default function Homepage() {
-  const [web3auth, setWeb3auth] = useState<Web3Auth | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const chainConfig = getSolanaChainConfig(0x3)!; // 0x3 Solana Devnet
-        const solanaPrivateKeyProvider = new SolanaPrivateKeyProvider({
-          config: { chainConfig },
-        });
-
-        const web3auth = new Web3Auth({
-          clientId,
-          web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_MAINNET,
-          privateKeyProvider: solanaPrivateKeyProvider,
-        });
-
-        setWeb3auth(web3auth);
-        await web3auth.initModal();
-
-        if (web3auth.connected) {
-          setIsConnected(true);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    init();
-  }, []);
-
-  const connectWallet = async () => {
-    if (!web3auth) {
-      console.error("web3auth not initialized");
-      return;
-    }
-
-    const provider = await web3auth.connect();
-    if (web3auth.connected) {
-      setIsConnected(true);
-    }
-  };
-
   return (
     <>
       {/* Hero Section */}
@@ -99,16 +47,6 @@ export default function Homepage() {
           </p>
         </div>
       </div>
-
-      {/* CTA Section */}
-      {!isConnected && (
-        <div className="cta-container">
-          <h2>Experience the Future of Proximity Payments</h2>
-          <button onClick={connectWallet} className="cta-button">
-            Connect Wallet
-          </button>
-        </div>
-      )}
     </>
   );
 }
