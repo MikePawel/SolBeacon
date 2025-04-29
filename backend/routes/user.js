@@ -3,6 +3,44 @@ const router = express.Router();
 const User = require("../models/users");
 module.exports = router;
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - walletAddress
+ *       properties:
+ *         walletAddress:
+ *           type: string
+ *           description: Wallet address of the user
+ *         createdAt:
+ *           type: string
+ *           format: date
+ *           description: Date when user was created
+ *         updatedAt:
+ *           type: string
+ *           format: date
+ *           description: Date when user was last updated
+ */
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Returns all users
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: List of all users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ */
 // Get all users
 router.get("/", async (req, res) => {
   try {
@@ -13,12 +51,54 @@ router.get("/", async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /users/{walletAddress}:
+ *   get:
+ *     summary: Get a user by wallet address
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: walletAddress
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Wallet address of the user
+ *     responses:
+ *       200:
+ *         description: User information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
 // Get a user by wallet address
 router.get("/:walletAddress", async (req, res) => {
   const user = await getUserByWalletAddress(req.params.walletAddress);
   res.status(200).json(user);
 });
 
+/**
+ * @swagger
+ * /users/{walletAddress}:
+ *   delete:
+ *     summary: Delete a user by wallet address
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: walletAddress
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Wallet address of the user
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       404:
+ *         description: User not found
+ */
 // delete a user by wallet address
 router.delete("/:walletAddress", async (req, res) => {
   const user = await getUserByWalletAddress(req.params.walletAddress);
@@ -29,6 +109,32 @@ router.delete("/:walletAddress", async (req, res) => {
   res.status(200).json({ message: "User deleted" });
 });
 
+/**
+ * @swagger
+ * /users:
+ *   post:
+ *     summary: Create a new user
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               walletAddress:
+ *                 type: string
+ *                 description: Wallet address of the user
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid input data
+ */
 //create a user
 router.post("/", async (req, res) => {
   const user = new User({
