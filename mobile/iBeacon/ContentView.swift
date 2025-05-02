@@ -9,11 +9,13 @@ import SwiftUI
 import CoreLocation
 import CoreBluetooth
 import UserNotifications
-import BackgroundTasks
 
 struct ContentView: View {
     @StateObject private var beaconDetector = BeaconDetector()
     @Environment(\.colorScheme) var colorScheme
+    @State private var showCopiedMessage = false
+    @State private var showEditDeviceIDSheet = false
+    @State private var customDeviceID = ""
     
     var body: some View {
         NavigationView {
@@ -94,6 +96,76 @@ struct ContentView: View {
                 )
                 .padding(.horizontal)
                 
+                // Device ID card
+                VStack(alignment: .leading, spacing: 15) {
+                    Text("Device Information")
+                        .font(.headline)
+                        .padding(.top, 5)
+                    
+                    Divider()
+                    
+                    HStack {
+                        Text("Device ID")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .frame(width: 70, alignment: .leading)
+                        
+                        Text(beaconDetector.deviceIdentifier)
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            UIPasteboard.general.string = beaconDetector.deviceIdentifier
+                            withAnimation {
+                                showCopiedMessage = true
+                            }
+                            
+                            // Hide the message after 2 seconds
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                withAnimation {
+                                    showCopiedMessage = false
+                                }
+                            }
+                        }) {
+                            Image(systemName: "doc.on.doc")
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Button(action: {
+                            customDeviceID = beaconDetector.deviceIdentifier
+                            showEditDeviceIDSheet = true
+                        }) {
+                            Image(systemName: "pencil")
+                                .foregroundColor(.blue)
+                                .padding(.leading, 8)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                    
+                    if showCopiedMessage {
+                        Text("Device ID copied to clipboard!")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                            .padding(.top, 2)
+                            .transition(.opacity)
+                    }
+                    
+                    Text("This ID will be used for future deployment")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 2)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
+                )
+                .padding(.horizontal)
+                
                 // Auth warning if needed
                 if beaconDetector.authorizationStatus != "Authorized Always" {
                     VStack(spacing: 10) {
@@ -139,6 +211,52 @@ struct ContentView: View {
             .padding(.top)
             .navigationTitle("iBeacon Monitor")
             .preferredColorScheme(.light) // Force light mode
+            .sheet(isPresented: $showEditDeviceIDSheet) {
+                VStack(spacing: 20) {
+                    Text("Custom Device Identifier")
+                        .font(.headline)
+                    
+                    Text("Edit only if instructed by deployment team")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    TextField("Device ID", text: $customDeviceID)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                        .padding(.horizontal)
+                    
+                    HStack {
+                        Button("Cancel") {
+                            showEditDeviceIDSheet = false
+                        }
+                        .padding()
+                        
+                        Spacer()
+                        
+                        Button("Reset to Default") {
+                            beaconDetector.resetToDefaultIdentifier()
+                            showEditDeviceIDSheet = false
+                        }
+                        .padding()
+                        .foregroundColor(.red)
+                        
+                        Spacer()
+                        
+                        Button("Save") {
+                            if !customDeviceID.isEmpty {
+                                beaconDetector.updateDeviceIdentifier(customDeviceID)
+                            }
+                            showEditDeviceIDSheet = false
+                        }
+                        .padding()
+                        .foregroundColor(.white)
+                        .background(Color.blue)
+                        .cornerRadius(8)
+                    }
+                }
+                .padding()
+            }
         }
     }
     
@@ -185,23 +303,17 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var isBeaconDetected = false
     @Published var proximityString = "Unknown"
     @Published var authorizationStatus = "Unknown"
+    @Published var deviceIdentifier = "Unknown"
     
     private let locationManager = CLLocationManager()
     let beaconRegion: CLBeaconRegion // Changed to public for debugging
     private var lastSentProximity: CLProximity?
-    private var lastWebhookSentTime: Date? = nil
-    private let minimumWebhookInterval: TimeInterval = 60 // Minimum seconds between webhook calls
-    
-    // Add webhook configuration
-    private let webhookURL = "https://nodered.yanacocha.fit.fraunhofer.de/beacon?name=RWTH&presence=on"
-    private let username = "prinz"
-    private let password = "prinz"
-    
-    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    private var beaconLostTime: Date? = nil // Track when the beacon was lost
+    private let requiredLostTimeForNotification: TimeInterval = 10.0 // 10 seconds
     
     override init() {
-        let uuid = UUID(uuidString: "F0018B9B-7509-4C31-A905-1A27D39C003C")!
-        beaconRegion = CLBeaconRegion(uuid: uuid, major: 12, minor: 5, identifier: "MyBeacon")
+        let uuid = UUID(uuidString: "FA4F992B-0F59-4E61-B0FB-457308078CAB")!
+        beaconRegion = CLBeaconRegion(uuid: uuid, major: 1, minor: 1, identifier: "MyBeacon")
         
         super.init()
         
@@ -212,6 +324,7 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         setupLocationManager()
         setupNotifications() // Make sure notifications are set up
+        getDeviceIdentifier()
     }
     
     private func setupLocationManager() {
@@ -234,6 +347,25 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
+    private func getDeviceIdentifier() {
+        // Try to get saved ID first
+        if let savedID = UserDefaults.standard.string(forKey: "device_identifier") {
+            self.deviceIdentifier = savedID
+            return
+        }
+        
+        // If no saved ID, get from device and save
+        if let identifierForVendor = UIDevice.current.identifierForVendor {
+            let id = identifierForVendor.uuidString
+            self.deviceIdentifier = id
+            
+            // Save for future use
+            UserDefaults.standard.set(id, forKey: "device_identifier")
+        } else {
+            self.deviceIdentifier = "Unavailable"
+        }
+    }
+    
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
         DispatchQueue.main.async {
             switch status {
@@ -242,11 +374,10 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
                 self.startScanning()
             case .authorizedWhenInUse:
                 self.authorizationStatus = "Authorized When In Use"
-                // Show alert or message to user that Always authorization is needed
-                self.showNotification(title: "", message: "Please enable 'Always' location access for background monitoring")
+                // Don't show notification for authorization status
             case .denied:
                 self.authorizationStatus = "Denied"
-                self.showNotification(title: "", message: "Location access denied - beacon monitoring won't work")
+                // Don't show notification for authorization status
             case .restricted:
                 self.authorizationStatus = "Restricted"
             case .notDetermined:
@@ -276,67 +407,6 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
-    private func shouldSendWebhook() -> Bool {
-        // If we've never sent a webhook or the minimum interval has passed
-        if lastWebhookSentTime == nil || 
-           Date().timeIntervalSince(lastWebhookSentTime!) >= minimumWebhookInterval {
-            return true
-        }
-        return false
-    }
-    
-    private func sendWebhookRequest() {
-        // Only send if we should according to our throttling logic
-        guard shouldSendWebhook() else {
-            print("Skipping webhook - too soon since last send")
-            return
-        }
-        
-        // Update last sent time
-        lastWebhookSentTime = Date()
-        
-        // Start background task
-        backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in
-            self?.endBackgroundTask()
-        }
-        
-        guard let url = URL(string: webhookURL) else {
-            endBackgroundTask()
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        
-        let loginString = "\(username):\(password)"
-        guard let loginData = loginString.data(using: .utf8) else {
-            endBackgroundTask()
-            return
-        }
-        let base64LoginString = loginData.base64EncodedString()
-        request.setValue("Basic \(base64LoginString)", forHTTPHeaderField: "Authorization")
-        
-        print("Sending webhook request at \(Date())")
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            if let error = error {
-                print("Webhook error: \(error.localizedDescription)")
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("Webhook response status: \(httpResponse.statusCode)")
-            }
-            
-            self?.endBackgroundTask()
-        }.resume()
-    }
-    
-    private func endBackgroundTask() {
-        if backgroundTask != .invalid {
-            UIApplication.shared.endBackgroundTask(backgroundTask)
-            backgroundTask = .invalid
-        }
-    }
-    
     func locationManager(_ manager: CLLocationManager, didRange beacons: [CLBeacon], satisfying beaconConstraint: CLBeaconIdentityConstraint) {
         print("Ranging beacons: Found \(beacons.count) beacons")
         
@@ -345,12 +415,23 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
                 print("Nearest beacon: UUID: \(nearestBeacon.uuid.uuidString)")
                 print("Major: \(nearestBeacon.major), Minor: \(nearestBeacon.minor)")
                 
+                // Check if this is a reappearance after being lost for sufficient time
+                let shouldShowNotification = !self.isBeaconDetected && 
+                                            self.beaconLostTime != nil &&
+                                            Date().timeIntervalSince(self.beaconLostTime!) >= self.requiredLostTimeForNotification
+                
                 if !self.isBeaconDetected {
-                    // Beacon was just detected - this is a good time to send a webhook
-                    self.showNotification(title: "Beacon Detected", message: "Beacon is now in range")
-                    self.sendWebhookRequest()
+                    // Beacon was just detected
+                    if shouldShowNotification {
+                        self.showNotification(title: "Beacon Detected", message: "Beacon Detected")
+                    } else if self.beaconLostTime == nil {
+                        // First detection ever - show notification
+                        self.showNotification(title: "Beacon Detected", message: "Beacon Detected")
+                    }
                 }
                 
+                // Reset beacon lost time since we're detecting it now
+                self.beaconLostTime = nil
                 self.isBeaconDetected = true
                 
                 // Check if proximity changed 
@@ -360,8 +441,6 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
                     switch nearestBeacon.proximity {
                     case .immediate:
                         self.proximityString = "Immediate"
-                        // Only send webhook at immediate proximity if enough time has passed
-                        self.sendWebhookRequest()
                     case .near:
                         self.proximityString = "Near"
                     case .far:
@@ -372,9 +451,9 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
                 }
             } else {
                 if self.isBeaconDetected {
-                    // Beacon was just lost
+                    // Beacon was just lost - record the time
                     print("Beacon lost - no beacons in range")
-                    self.showNotification(title: "Beacon Lost", message: "Beacon is no longer in range")
+                    self.beaconLostTime = Date()
                 }
                 self.isBeaconDetected = false
                 self.proximityString = "Unknown"
@@ -386,17 +465,19 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     // Update the region monitoring callbacks
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
         print("Entered region: \(region.identifier)")
-        // Don't automatically send a webhook here - wait for ranging to confirm
-        showNotification(title: "Beacon Detected", message: "You have entered the beacon region")
+        // We don't show notification here - we wait for ranging to confirm
     }
     
     func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
         print("Exited region: \(region.identifier)")
         DispatchQueue.main.async {
+            if self.isBeaconDetected {
+                // Record the time when the beacon was lost
+                self.beaconLostTime = Date()
+            }
             self.isBeaconDetected = false
             self.proximityString = "Unknown"
             self.lastSentProximity = nil
-            self.showNotification(title: "Beacon Lost", message: "You have left the beacon region")
         }
     }
     
@@ -406,29 +487,19 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
             case .inside:
                 print("Inside beacon region")
                 locationManager.startRangingBeacons(satisfying: beaconRegion.beaconIdentityConstraint)
-                // Don't send webhook here - wait for actual ranging to confirm
-                showNotification(title: "Beacon Detected", message: "You are in the beacon region")
+                // Don't show notification here - wait for ranging to confirm
             case .outside:
                 print("Outside beacon region")
                 locationManager.stopRangingBeacons(satisfying: beaconRegion.beaconIdentityConstraint)
-                showNotification(title: "Beacon Lost", message: "You are outside the beacon region")
+                // Reset notification status when outside region
+                if self.isBeaconDetected {
+                    self.beaconLostTime = Date()
+                }
+                self.isBeaconDetected = false
             case .unknown:
                 print("Unknown beacon region state")
             }
         }
-    }
-    
-    // Remove the periodic monitoring functionality as it's sending too many messages
-    private var monitoringTimer: Timer?
-    
-    private func startPeriodicMonitoring() {
-        // We're removing the automatic periodic webhook sending
-        // and only sending when beacons are actually detected
-    }
-    
-    private func stopPeriodicMonitoring() {
-        monitoringTimer?.invalidate()
-        monitoringTimer = nil
     }
     
     private func showNotification(title: String, message: String) {
@@ -455,42 +526,23 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     // Clean up when the detector is deallocated
     deinit {
-        stopPeriodicMonitoring()
-        endBackgroundTask()
+        // No more webhook or background tasks to clean up
     }
     
-    func registerBackgroundTask() {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.IvanDosev.iBeacon1.beacon.monitoring", using: nil) { task in
-            self.handleAppRefresh(task: task as! BGAppRefreshTask)
-        }
+    func updateDeviceIdentifier(_ newDeviceID: String) {
+        self.deviceIdentifier = newDeviceID
+        UserDefaults.standard.set(newDeviceID, forKey: "device_identifier")
     }
     
-    private func handleAppRefresh(task: BGAppRefreshTask) {
-        // Schedule the next background task
-        scheduleBackgroundTask()
+    func resetToDefaultIdentifier() {
+        // Remove saved ID
+        UserDefaults.standard.removeObject(forKey: "device_identifier")
         
-        // Perform the beacon monitoring
-        task.expirationHandler = {
-            // Handle task expiration
-            self.stopPeriodicMonitoring()
-        }
-        
-        // Instead of starting periodic monitoring that sends webhooks on a timer,
-        // just make sure we're monitoring for beacons
-        startScanning()
-        
-        // Mark the task complete when done
-        task.setTaskCompleted(success: true)
-    }
-    
-    private func scheduleBackgroundTask() {
-        let request = BGAppRefreshTaskRequest(identifier: "com.IvanDosev.iBeacon1.beacon.monitoring")
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60) // 15 minutes
-        
-        do {
-            try BGTaskScheduler.shared.submit(request)
-        } catch {
-            print("Could not schedule app refresh: \(error)")
+        // Get fresh device identifier
+        if let identifierForVendor = UIDevice.current.identifierForVendor {
+            self.deviceIdentifier = identifierForVendor.uuidString
+        } else {
+            self.deviceIdentifier = "Unavailable"
         }
     }
 }
