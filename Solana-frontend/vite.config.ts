@@ -1,10 +1,32 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    nodePolyfills({
+      include: [
+        "buffer",
+        "process",
+        "stream",
+        "http",
+        "https",
+        "os",
+        "url",
+        "zlib",
+        "assert",
+        "crypto",
+      ],
+      globals: {
+        Buffer: true,
+        process: true,
+        global: true,
+      },
+    }),
+  ],
   server: {
     proxy: {
       "/api": {
@@ -41,9 +63,26 @@ export default defineConfig({
   build: {
     rollupOptions: {
       plugins: [],
+      output: {
+        manualChunks: {
+          vendor: [
+            "buffer",
+            "process",
+            "stream-browserify",
+            "stream-http",
+            "https-browserify",
+            "os-browserify",
+            "url",
+            "zlib-browserify",
+            "assert",
+            "crypto-browserify",
+          ],
+        },
+      },
     },
     commonjsOptions: {
       transformMixedEsModules: true,
     },
+    sourcemap: true,
   },
 });
