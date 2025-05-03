@@ -9,7 +9,8 @@ import "./Header.css";
 
 // Constants
 const clientId =
-  "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ";
+  "BO64YmrgP9IlUvt2__kcdilBAdRuC7Q7-uGOajbW5UNpN69GLTFJmCFF1E0X-V2NLs5OM7VapVZuWCF-KTNT5kg";
+//Free one: BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ
 
 export default function Header() {
   const [web3auth, setWeb3auth] = useState<Web3Auth | null>(null);
@@ -29,7 +30,7 @@ export default function Header() {
 
         const web3auth = new Web3Auth({
           clientId,
-          web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_MAINNET,
+          web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
           privateKeyProvider: solanaPrivateKeyProvider,
         });
 

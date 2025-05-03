@@ -16,7 +16,8 @@ import "./wallet.css";
 
 // Constants
 const clientId =
-  "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ";
+  "BO64YmrgP9IlUvt2__kcdilBAdRuC7Q7-uGOajbW5UNpN69GLTFJmCFF1E0X-V2NLs5OM7VapVZuWCF-KTNT5kg";
+//Free one: BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ
 
 export default function Wallet() {
   const [web3auth, setWeb3auth] = useState<Web3Auth | null>(null);
@@ -67,7 +68,8 @@ export default function Wallet() {
             primaryButton: "externalLogin",
             uxMode: "redirect",
           },
-          web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_MAINNET,
+          web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
+          // web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_MAINNET,
           privateKeyProvider: solanaPrivateKeyProvider,
         });
 
