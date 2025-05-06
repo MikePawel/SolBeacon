@@ -1,15 +1,5 @@
 [build]
-providers = ["node"]
-
-[phases.install]
-cmds = [
-  "npm install",
-  "npm install -g serve",    # Ensure serve is installed
-  "npm run tsc"              # Ensure TypeScript compilation is done if needed
-]
-
-[phases.build]
-cmds = ["npm run build"]
+cmd = "npm run build"
 
 [start]
-cmd = "npx serve dist"
+cmd = "npm run serve"
