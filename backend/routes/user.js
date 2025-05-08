@@ -11,10 +11,14 @@ module.exports = router;
  *       type: object
  *       required:
  *         - walletAddress
+ *         - name
  *       properties:
  *         walletAddress:
  *           type: string
  *           description: Wallet address of the user
+ *         name:
+ *           type: string
+ *           description: Name of the user
  *         createdAt:
  *           type: string
  *           format: date
@@ -121,10 +125,16 @@ router.delete("/:walletAddress", async (req, res) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - walletAddress
+ *               - name
  *             properties:
  *               walletAddress:
  *                 type: string
  *                 description: Wallet address of the user
+ *               name:
+ *                 type: string
+ *                 description: Name of the user
  *     responses:
  *       201:
  *         description: User created successfully
@@ -139,6 +149,7 @@ router.delete("/:walletAddress", async (req, res) => {
 router.post("/", async (req, res) => {
   const user = new User({
     walletAddress: req.body.walletAddress,
+    name: req.body.name,
   });
   try {
     const newUser = await user.save();
