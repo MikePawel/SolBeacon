@@ -246,7 +246,7 @@ export default function Wallet() {
       return;
     }
     const user = await web3auth.getUserInfo();
-    uiConsole(user);
+    uiConsole(user.email, user.name);
   };
 
   const authenticateUser = async () => {
@@ -516,14 +516,14 @@ export default function Wallet() {
           </div>
         </div>
 
-        <div className="action-row session-row">
+        {/* <div className="action-row session-row">
           <button
             onClick={logout}
             className="wallet-action-button logout-button"
           >
             Disconnect Wallet
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* API Integration Section */}
@@ -551,9 +551,9 @@ export default function Wallet() {
   const unloggedInView = (
     <div className="login-section">
       <p>Connect your wallet to access your dashboard</p>
-      <button onClick={login} className="wallet-action-button login-button">
+      {/* <button onClick={login} className="wallet-action-button login-button">
         Connect Wallet
-      </button>
+      </button> */}
     </div>
   );
 

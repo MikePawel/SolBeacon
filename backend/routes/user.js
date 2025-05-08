@@ -10,15 +10,19 @@ module.exports = router;
  *     User:
  *       type: object
  *       required:
- *         - walletAddress
  *         - name
+ *         - email
+ *         - walletAddress
  *       properties:
- *         walletAddress:
- *           type: string
- *           description: Wallet address of the user
  *         name:
  *           type: string
  *           description: Name of the user
+ *         email:
+ *           type: string
+ *           description: Email of the user
+ *         walletAddress:
+ *           type: string
+ *           description: Wallet address of the user
  *         createdAt:
  *           type: string
  *           format: date
@@ -126,15 +130,19 @@ router.delete("/:walletAddress", async (req, res) => {
  *           schema:
  *             type: object
  *             required:
- *               - walletAddress
  *               - name
+ *               - email
+ *               - walletAddress
  *             properties:
- *               walletAddress:
- *                 type: string
- *                 description: Wallet address of the user
  *               name:
  *                 type: string
  *                 description: Name of the user
+ *               email:
+ *                 type: string
+ *                 description: Email of the user
+ *               walletAddress:
+ *                 type: string
+ *                 description: Wallet address of the user
  *     responses:
  *       201:
  *         description: User created successfully
@@ -148,8 +156,9 @@ router.delete("/:walletAddress", async (req, res) => {
 //create a user
 router.post("/", async (req, res) => {
   const user = new User({
-    walletAddress: req.body.walletAddress,
     name: req.body.name,
+    email: req.body.email,
+    walletAddress: req.body.walletAddress,
   });
   try {
     const newUser = await user.save();
