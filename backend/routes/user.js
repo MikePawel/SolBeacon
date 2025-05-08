@@ -27,10 +27,10 @@ module.exports = router;
  *           type: string
  *           format: date
  *           description: Date when user was created
- *         updatedAt:
+ *         loggedInAt:
  *           type: string
  *           format: date
- *           description: Date when user was last updated
+ *           description: Date when user last logged in
  */
 
 /**
@@ -121,7 +121,7 @@ router.delete("/:walletAddress", async (req, res) => {
  * @swagger
  * /users:
  *   post:
- *     summary: Create a new user
+ *     summary: Sign up or log in a user
  *     tags: [Users]
  *     requestBody:
  *       required: true
@@ -144,6 +144,12 @@ router.delete("/:walletAddress", async (req, res) => {
  *                 type: string
  *                 description: Wallet address of the user
  *     responses:
+ *       200:
+ *         description: User logged in successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
  *       201:
  *         description: User created successfully
  *         content:
@@ -153,14 +159,21 @@ router.delete("/:walletAddress", async (req, res) => {
  *       400:
  *         description: Invalid input data
  */
-//create a user
+// Sign up or log in a user
 router.post("/", async (req, res) => {
-  const user = new User({
-    name: req.body.name,
-    email: req.body.email,
-    walletAddress: req.body.walletAddress,
-  });
   try {
+    let user = await User.findOne({ email: req.body.email });
+    if (user) {
+      user.loggedInAt = new Date();
+      await user.save();
+      return res.status(200).json(user);
+    }
+    user = new User({
+      name: req.body.name,
+      email: req.body.email,
+      walletAddress: req.body.walletAddress,
+      loggedInAt: new Date(),
+    });
     const newUser = await user.save();
     res.status(201).json(newUser);
   } catch (error) {

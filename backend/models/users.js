@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   walletAddress: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
+  loggedInAt: { type: Date },
 });
 
 const User = mongoose.model("User", userSchema);
