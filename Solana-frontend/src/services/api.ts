@@ -3,6 +3,12 @@ import axios from "axios";
 // Use the Vite proxy path instead of the direct URL
 const API_URL = "/api";
 
+interface UserData {
+  name: string;
+  email: string;
+  walletAddress: string;
+}
+
 /**
  * API service for making HTTP requests to the backend
  */
@@ -43,6 +49,24 @@ class ApiService {
         `Error fetching user with wallet address ${walletAddress}:`,
         error
       );
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new user
+   */
+  async createUser(userData: UserData) {
+    try {
+      const response = await axios.post(`${API_URL}/users`, userData, {
+        headers: {
+          accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error creating user:", error);
       throw error;
     }
   }

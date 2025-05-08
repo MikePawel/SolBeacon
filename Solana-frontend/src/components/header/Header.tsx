@@ -5,6 +5,7 @@ import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from "@web3auth/base";
 import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
 import { getSolanaChainConfig } from "@web3auth/base";
 import RPC from "../../solanaRPC";
+import apiService from "../../services/api";
 import "./Header.css";
 
 // Constants
@@ -110,9 +111,24 @@ export default function Header() {
       const fullAddress = await getAccountAddress(provider);
       const user = await getUserInfo(web3auth);
 
+      // Print user info only on wallet connection using the direct response
       console.log("User Name:", user?.name);
       console.log("User Email:", user?.email);
       console.log("User Wallet Address:", fullAddress);
+
+      // Create user in backend
+      try {
+        if (user?.name && user?.email && fullAddress) {
+          await apiService.createUser({
+            name: user.name,
+            email: user.email,
+            walletAddress: fullAddress,
+          });
+          console.log("User successfully created in backend");
+        }
+      } catch (error) {
+        console.error("Error creating user in backend:", error);
+      }
     }
   };
 
