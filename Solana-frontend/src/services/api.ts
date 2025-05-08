@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// Use the Vite proxy path instead of the direct URL
-const API_URL = "/api";
+// Use the full URL for production, proxy for development
+const API_URL = "https://master-api.mikepawel.com";
 
 interface UserData {
   name: string;
@@ -9,9 +9,6 @@ interface UserData {
   walletAddress: string;
 }
 
-/**
- * API service for making HTTP requests to the backend
- */
 class ApiService {
   /**
    * Get all users
