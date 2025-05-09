@@ -2,13 +2,14 @@
 //  ContentView.swift
 //  iBeacon
 //
-//  Created by dimitrov on 22.01.25.
+//  Created by mike
 //
 
 import SwiftUI
 import CoreLocation
 import CoreBluetooth
 import UserNotifications
+import Foundation
 
 struct ContentView: View {
     @StateObject private var beaconDetector = BeaconDetector()
@@ -73,6 +74,38 @@ struct ContentView: View {
                         .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
                 )
                 .padding(.horizontal)
+                
+                // Payment API Response Card (new)
+                if beaconDetector.lastPaymentResponse != nil {
+                    VStack(alignment: .leading, spacing: 15) {
+                        HStack {
+                            Image(systemName: "creditcard.fill")
+                                .font(.system(size: 22))
+                                .foregroundColor(.blue)
+                            
+                            Text("Payment API Response")
+                                .font(.headline)
+                                .padding(.top, 5)
+                            
+                            Spacer()
+                        }
+                        
+                        Divider()
+                        
+                        Text(beaconDetector.lastPaymentResponse ?? "")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                            .padding(.vertical, 5)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
+                    )
+                    .padding(.horizontal)
+                }
                 
                 // Beacon info card
                 VStack(alignment: .leading, spacing: 15) {
@@ -304,6 +337,10 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var proximityString = "Unknown"
     @Published var authorizationStatus = "Unknown"
     @Published var deviceIdentifier = "Unknown"
+    @Published var lastPaymentResponse: String? = nil
+    
+    // Internal payment service
+    private var paymentService: InternalPaymentService?
     
     private let locationManager = CLLocationManager()
     let beaconRegion: CLBeaconRegion // Changed to public for debugging
@@ -316,6 +353,9 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         beaconRegion = CLBeaconRegion(uuid: uuid, major: 1, minor: 1, identifier: "MyBeacon")
         
         super.init()
+        
+        // Initialize internal payment service
+        self.paymentService = InternalPaymentService()
         
         // Configure beacon region for background monitoring
         beaconRegion.notifyOnEntry = true
@@ -423,10 +463,10 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
                 if !self.isBeaconDetected {
                     // Beacon was just detected
                     if shouldShowNotification {
-                        self.showNotification(title: "Beacon Detected", message: "Beacon Detected")
+                        self.callPaymentAPIAndNotify()
                     } else if self.beaconLostTime == nil {
                         // First detection ever - show notification
-                        self.showNotification(title: "Beacon Detected", message: "Beacon Detected")
+                        self.callPaymentAPIAndNotify()
                     }
                 }
                 
@@ -502,6 +542,26 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
+    private func callPaymentAPIAndNotify() {
+        // Use the internal payment service instead
+        paymentService?.requestPayment { result in
+            // Fix for "Trailing closure passed to parameter of type 'DispatchWorkItem'"
+            let mainQueue = DispatchQueue.main
+            mainQueue.async(execute: {
+                switch result {
+                case .success(let response):
+                    let responseMessage = response.message ?? "Payment request successful"
+                    self.lastPaymentResponse = responseMessage
+                    self.showNotification(title: "Beacon Detected", message: "Payment API: \(responseMessage)")
+                    
+                case .failure(let error):
+                    self.lastPaymentResponse = "Error: \(error.localizedDescription)"
+                    self.showNotification(title: "Beacon Detected", message: "Payment API Error: \(error.localizedDescription)")
+                }
+            })
+        }
+    }
+    
     private func showNotification(title: String, message: String) {
         let content = UNMutableNotificationContent()
         content.title = title
@@ -544,6 +604,55 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         } else {
             self.deviceIdentifier = "Unavailable"
         }
+    }
+}
+
+// Internal payment service to avoid import issues
+fileprivate class InternalPaymentService {
+    struct Response: Codable {
+        var status: String?
+        var message: String?
+    }
+    
+    func requestPayment(completion: @escaping (Result<Response, Error>) -> Void) {
+        let urlString = "https://master-api.mikepawel.com/payment"
+        
+        guard let url = URL(string: urlString) else {
+            completion(.failure(NSError(domain: "PaymentService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("application/json", forHTTPHeaderField: "accept")
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data else {
+                completion(.failure(NSError(domain: "PaymentService", code: 500, userInfo: [NSLocalizedDescriptionKey: "No data received"])))
+                return
+            }
+            
+            do {
+                let decoder = JSONDecoder()
+                let paymentResponse = try decoder.decode(Response.self, from: data)
+                completion(.success(paymentResponse))
+            } catch {
+                // If we can't decode to our struct, return the raw data as string
+                if let rawResponse = String(data: data, encoding: .utf8) {
+                    let mockResponse = Response(status: "success", message: rawResponse)
+                    completion(.success(mockResponse))
+                } else {
+                    completion(.failure(error))
+                }
+            }
+        }
+        
+        task.resume()
     }
 }
 
