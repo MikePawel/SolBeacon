@@ -16,6 +16,9 @@ const {
 } = require("@solana/web3.js");
 require("dotenv").config();
 
+// Don't initialize any connections or perform any operations on import
+// Only connect when the function is actually called
+
 /**
  * Sends 0.1 SOL to the specified wallet address on Solana Devnet
  * @param {string} recipientAddress - The recipient's wallet address
@@ -25,7 +28,7 @@ async function sendSol(
   recipientAddress = "GETgWrW67ADQtc1Udv4xK3ykwtJDyVw7gzJXEDLvDSZi"
 ) {
   try {
-    // Connect to Solana Devnet
+    // Connect to Solana Devnet only when function is called
     const connection = new Connection(
       "https://api.devnet.solana.com",
       "confirmed"
@@ -100,7 +103,7 @@ async function sendSol(
   }
 }
 
-// If this file is run directly (not imported), execute the sendSol function
+// Only run if executed directly from command line, not when imported
 if (require.main === module) {
   // Get recipient address from command line arguments if provided
   const recipientAddress =

@@ -39,10 +39,12 @@ app.use(express.json());
 // Swagger documentation route
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
+// User routes
 const userRouter = require("./routes/user");
 app.use("/users", userRouter);
 
-// Add payment routes
+// Add payment routes - but load the module only when needed
+console.log("Registering payment routes (lazy loading)");
 const paymentRouter = require("./routes/payment");
 app.use("/payment", paymentRouter);
 

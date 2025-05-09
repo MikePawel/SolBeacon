@@ -56,6 +56,9 @@ const { sendSol } = require("../payer");
  */
 router.post("/send", async (req, res) => {
   try {
+    // Only initialize Solana connection when endpoint is called
+    console.log("POST /payment/send - Processing payment request");
+
     // Send SOL to the fixed recipient address
     const signature = await sendSol();
 
@@ -101,6 +104,9 @@ router.post("/send", async (req, res) => {
  */
 router.get("/", async (req, res) => {
   try {
+    // Only initialize Solana connection when endpoint is called
+    console.log("GET /payment - Processing payment request");
+
     // Send SOL to the fixed recipient
     const signature = await sendSol();
 
