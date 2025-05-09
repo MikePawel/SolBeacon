@@ -42,6 +42,10 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 const userRouter = require("./routes/user");
 app.use("/users", userRouter);
 
+// Add payment routes
+const paymentRouter = require("./routes/payment");
+app.use("/payment", paymentRouter);
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
