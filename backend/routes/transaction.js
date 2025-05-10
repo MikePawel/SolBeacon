@@ -12,42 +12,31 @@ const { verifyTransaction } = require("../components/verifyTx");
  *       type: object
  *       required:
  *         - walletAddress
- *         - transactionHash
+ *         - transactions
  *       properties:
  *         walletAddress:
  *           type: string
  *           description: Wallet address of the user
- *         transactionHash:
- *           type: string
- *           description: Transaction hash/signature from Solana
- *         amount:
- *           type: number
- *           description: Amount transferred in SOL
- *         sender:
- *           type: string
- *           description: Sender wallet address
- *         recipient:
- *           type: string
- *           description: Recipient wallet address
- *         status:
- *           type: string
- *           enum: [success, failed]
- *           description: Status of the transaction
- *         blockTime:
- *           type: string
- *           format: date-time
- *           description: Time when the transaction was confirmed
- *         createdAt:
- *           type: string
- *           format: date-time
- *           description: Time when transaction was recorded in database
+ *         transactions:
+ *           type: array
+ *           description: List of transaction hashes
+ *           items:
+ *             type: object
+ *             properties:
+ *               transactionHash:
+ *                 type: string
+ *                 description: Transaction hash/signature from Solana
+ *               createdAt:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Time when transaction was recorded
  */
 
 /**
  * @swagger
  * /transactions:
  *   post:
- *     summary: Record a new transaction
+ *     summary: Record a new transaction hash for a user
  *     tags: [Transactions]
  *     requestBody:
  *       required: true
@@ -75,7 +64,7 @@ const { verifyTransaction } = require("../components/verifyTx");
  *       400:
  *         description: Invalid input or transaction already exists
  *       404:
- *         description: User not found or transaction verification failed
+ *         description: User not found
  *       500:
  *         description: Server error
  */
@@ -96,35 +85,47 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if transaction already exists
-    const existingTransaction = await Transaction.findOne({
-      transactionHash,
-    });
-    if (existingTransaction) {
-      return res.status(400).json({
-        message: "Transaction already exists",
+    // Verify transaction on blockchain
+    await verifyTransaction(transactionHash);
+
+    // Check if transaction record for this wallet exists
+    let walletTransactions = await Transaction.findOne({ walletAddress });
+
+    // Check if transaction hash already exists
+    if (walletTransactions) {
+      const hashExists = walletTransactions.transactions.some(
+        (tx) => tx.transactionHash === transactionHash
+      );
+
+      if (hashExists) {
+        return res.status(400).json({
+          message: "Transaction hash already exists for this wallet",
+        });
+      }
+
+      // Add new transaction hash to the array
+      walletTransactions.transactions.push({
+        transactionHash,
+        createdAt: new Date(),
+      });
+    } else {
+      // Create new wallet transaction record
+      walletTransactions = new Transaction({
+        walletAddress,
+        transactions: [
+          {
+            transactionHash,
+            createdAt: new Date(),
+          },
+        ],
       });
     }
 
-    // Verify transaction on blockchain
-    const txDetails = await verifyTransaction(transactionHash);
-
-    // Create a new transaction record
-    const transaction = new Transaction({
-      walletAddress,
-      transactionHash,
-      amount: txDetails.amount,
-      sender: txDetails.sender,
-      recipient: txDetails.recipient,
-      status: txDetails.status,
-      blockTime: txDetails.blockTime,
-    });
-
     // Save the transaction
-    const savedTransaction = await transaction.save();
+    const savedTransaction = await walletTransactions.save();
 
     // Update user balance transferred
-    user.balanceTransferred += txDetails.amount;
+    user.balanceTransferred += 1; // Increment by 1 for each transaction
     await user.save();
 
     res.status(201).json(savedTransaction);
@@ -138,7 +139,7 @@ router.post("/", async (req, res) => {
  * @swagger
  * /transactions/{walletAddress}:
  *   get:
- *     summary: Get all transactions for a user
+ *     summary: Get all transaction hashes for a user
  *     tags: [Transactions]
  *     parameters:
  *       - in: path
@@ -149,15 +150,13 @@ router.post("/", async (req, res) => {
  *         description: Wallet address of the user
  *     responses:
  *       200:
- *         description: List of user's transactions
+ *         description: User's transaction record
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Transaction'
+ *               $ref: '#/components/schemas/Transaction'
  *       404:
- *         description: User not found
+ *         description: User or transaction record not found
  *       500:
  *         description: Server error
  */
@@ -171,8 +170,14 @@ router.get("/:walletAddress", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Get all transactions for the user
-    const transactions = await Transaction.find({ walletAddress });
+    // Get transaction record for the user
+    const transactions = await Transaction.findOne({ walletAddress });
+
+    if (!transactions) {
+      return res.status(404).json({
+        message: "No transaction records found for this wallet",
+      });
+    }
 
     res.status(200).json(transactions);
   } catch (error) {
