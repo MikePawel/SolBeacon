@@ -20,70 +20,70 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 25) {
-                // Status card
-                VStack(spacing: 15) {
-                    HStack {
-                        Image(systemName: beaconDetector.isBeaconDetected ? "location.fill" : "location.slash")
-                            .font(.system(size: 36))
-                            .foregroundColor(beaconDetector.isBeaconDetected ? .blue : .gray)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(beaconDetector.isBeaconDetected ? "Beacon Detected" : "Searching...")
-                                .font(.headline)
-                                .foregroundColor(beaconDetector.isBeaconDetected ? .primary : .secondary)
+            ScrollView {
+                VStack(spacing: 25) {
+                    // Status card
+                    VStack(spacing: 15) {
+                        HStack {
+                            Image(systemName: beaconDetector.isBeaconDetected ? "location.fill" : "location.slash")
+                                .font(.system(size: 36))
+                                .foregroundColor(beaconDetector.isBeaconDetected ? .blue : .gray)
                             
-                            Text(beaconDetector.isBeaconDetected 
-                                ? "Distance: \(beaconDetector.proximityString)"
-                                : "No beacon in range")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Circle()
-                            .fill(beaconDetector.isBeaconDetected ? Color.green : Color.gray.opacity(0.3))
-                            .frame(width: 12, height: 12)
-                    }
-                    .padding()
-                    
-                    if beaconDetector.isBeaconDetected {
-                        // Proximity indicator
-                        VStack(spacing: 8) {
-                            Text("Signal Strength")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            HStack(spacing: 2) {
-                                ForEach(0..<5) { i in
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .fill(getBarColor(for: i, proximity: beaconDetector.proximityString))
-                                        .frame(width: 8, height: 15 + CGFloat(i * 5))
-                                }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(beaconDetector.isBeaconDetected ? "Beacon Detected" : "Searching...")
+                                    .font(.headline)
+                                    .foregroundColor(beaconDetector.isBeaconDetected ? .primary : .secondary)
+                                
+                                Text(beaconDetector.isBeaconDetected 
+                                    ? "Distance: \(beaconDetector.proximityString)"
+                                    : "No beacon in range")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
                             }
-                            .padding(.horizontal)
+                            
+                            Spacer()
+                            
+                            Circle()
+                                .fill(beaconDetector.isBeaconDetected ? Color.green : Color.gray.opacity(0.3))
+                                .frame(width: 12, height: 12)
                         }
-                        .padding(.bottom, 10)
+                        .padding()
+                        
+                        if beaconDetector.isBeaconDetected {
+                            // Proximity indicator
+                            VStack(spacing: 8) {
+                                Text("Signal Strength")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                HStack(spacing: 2) {
+                                    ForEach(0..<5) { i in
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .fill(getBarColor(for: i, proximity: beaconDetector.proximityString))
+                                            .frame(width: 8, height: 15 + CGFloat(i * 5))
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                            .padding(.bottom, 10)
+                        }
                     }
-                }
-                .frame(maxWidth: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(.systemBackground))
-                        .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
-                )
-                .padding(.horizontal)
-                
-                // Payment API Response Card (new)
-                if beaconDetector.lastPaymentResponse != nil {
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
+                    )
+                    .padding(.horizontal)
+                    
+                    // Transaction Status Card (new)
                     VStack(alignment: .leading, spacing: 15) {
                         HStack {
-                            Image(systemName: "creditcard.fill")
+                            Image(systemName: "arrow.clockwise.circle.fill")
                                 .font(.system(size: 22))
                                 .foregroundColor(.blue)
                             
-                            Text("Payment API Response")
+                            Text("Transaction Status")
                                 .font(.headline)
                                 .padding(.top, 5)
                             
@@ -92,10 +92,26 @@ struct ContentView: View {
                         
                         Divider()
                         
-                        Text(beaconDetector.lastPaymentResponse ?? "")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-                            .padding(.vertical, 5)
+                        if beaconDetector.transactionStatus != nil {
+                            ForEach(beaconDetector.transactionStatus ?? [], id: \.self) { status in
+                                HStack(spacing: 12) {
+                                    Image(systemName: getStatusIcon(for: status))
+                                        .foregroundColor(getStatusColor(for: status))
+                                    
+                                    Text(status)
+                                        .font(.subheadline)
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        } else {
+                            Text("No transactions in progress")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 5)
+                        }
                     }
                     .padding()
                     .frame(maxWidth: .infinity)
@@ -105,143 +121,175 @@ struct ContentView: View {
                             .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
                     )
                     .padding(.horizontal)
-                }
-                
-                // Beacon info card
-                VStack(alignment: .leading, spacing: 15) {
-                    Text("Beacon Information")
-                        .font(.headline)
-                        .padding(.top, 5)
                     
-                    Divider()
-                    
-                    InfoRow(label: "UUID", value: beaconDetector.beaconRegion.uuid.uuidString)
-                    InfoRow(label: "Major", value: "\(beaconDetector.beaconRegion.major?.intValue ?? 0)")
-                    InfoRow(label: "Minor", value: "\(beaconDetector.beaconRegion.minor?.intValue ?? 0)")
-                    InfoRow(label: "Location Auth", value: beaconDetector.authorizationStatus)
-                }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(.systemBackground))
-                        .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
-                )
-                .padding(.horizontal)
-                
-                // Device ID card
-                VStack(alignment: .leading, spacing: 15) {
-                    Text("Device Information")
-                        .font(.headline)
-                        .padding(.top, 5)
-                    
-                    Divider()
-                    
-                    HStack {
-                        Text("Device ID")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .frame(width: 70, alignment: .leading)
-                        
-                        Text(beaconDetector.deviceIdentifier)
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            UIPasteboard.general.string = beaconDetector.deviceIdentifier
-                            withAnimation {
-                                showCopiedMessage = true
+                    // Payment API Response Card
+                    if beaconDetector.lastPaymentResponse != nil {
+                        VStack(alignment: .leading, spacing: 15) {
+                            HStack {
+                                Image(systemName: "creditcard.fill")
+                                    .font(.system(size: 22))
+                                    .foregroundColor(.blue)
+                                
+                                Text("Payment API Response")
+                                    .font(.headline)
+                                    .padding(.top, 5)
+                                
+                                Spacer()
                             }
                             
-                            // Hide the message after 2 seconds
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                withAnimation {
-                                    showCopiedMessage = false
-                                }
-                            }
-                        }) {
-                            Image(systemName: "doc.on.doc")
-                                .foregroundColor(.blue)
-                        }
-                        
-                        Button(action: {
-                            customDeviceID = beaconDetector.deviceIdentifier
-                            showEditDeviceIDSheet = true
-                        }) {
-                            Image(systemName: "pencil")
-                                .foregroundColor(.blue)
-                                .padding(.leading, 8)
-                        }
-                    }
-                    .padding(.vertical, 2)
-                    
-                    if showCopiedMessage {
-                        Text("Device ID copied to clipboard!")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                            .padding(.top, 2)
-                            .transition(.opacity)
-                    }
-                    
-                    Text("This ID will be used for future deployment")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 2)
-                }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(.systemBackground))
-                        .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
-                )
-                .padding(.horizontal)
-                
-                // Auth warning if needed
-                if beaconDetector.authorizationStatus != "Authorized Always" {
-                    VStack(spacing: 10) {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text("Location Authorization Required")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                        }
-                        
-                        Text("Please enable 'Always' location access in Settings to monitor beacons in background")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                        
-                        Button(action: {
-                            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(settingsUrl)
-                            }
-                        }) {
-                            Text("Open Settings")
+                            Divider()
+                            
+                            Text(beaconDetector.lastPaymentResponse ?? "")
                                 .font(.subheadline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 8)
-                                .background(Color.blue)
-                                .cornerRadius(8)
+                                .foregroundColor(.primary)
+                                .padding(.vertical, 5)
                         }
-                        .padding(.top, 5)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
+                        )
+                        .padding(.horizontal)
+                    }
+                    
+                    // Beacon info card
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("Beacon Information")
+                            .font(.headline)
+                            .padding(.top, 5)
+                        
+                        Divider()
+                        
+                        InfoRow(label: "UUID", value: beaconDetector.beaconRegion.uuid.uuidString)
+                        InfoRow(label: "Major", value: "\(beaconDetector.beaconRegion.major?.intValue ?? 0)")
+                        InfoRow(label: "Minor", value: "\(beaconDetector.beaconRegion.minor?.intValue ?? 0)")
+                        InfoRow(label: "Location Auth", value: beaconDetector.authorizationStatus)
                     }
                     .padding()
                     .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemGray6))
+                            .fill(Color(.systemBackground))
+                            .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
                     )
                     .padding(.horizontal)
+                    
+                    // Device ID card
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("Device Information")
+                            .font(.headline)
+                            .padding(.top, 5)
+                        
+                        Divider()
+                        
+                        HStack {
+                            Text("Device ID")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .frame(width: 70, alignment: .leading)
+                            
+                            Text(beaconDetector.deviceIdentifier)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                UIPasteboard.general.string = beaconDetector.deviceIdentifier
+                                withAnimation {
+                                    showCopiedMessage = true
+                                }
+                                
+                                // Hide the message after 2 seconds
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    withAnimation {
+                                        showCopiedMessage = false
+                                    }
+                                }
+                            }) {
+                                Image(systemName: "doc.on.doc")
+                                    .foregroundColor(.blue)
+                            }
+                            
+                            Button(action: {
+                                customDeviceID = beaconDetector.deviceIdentifier
+                                showEditDeviceIDSheet = true
+                            }) {
+                                Image(systemName: "pencil")
+                                    .foregroundColor(.blue)
+                                    .padding(.leading, 8)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                        
+                        if showCopiedMessage {
+                            Text("Device ID copied to clipboard!")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                                .padding(.top, 2)
+                                .transition(.opacity)
+                        }
+                        
+                        Text("This ID will be used for future deployment")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 2)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
+                    )
+                    .padding(.horizontal)
+                    
+                    // Auth warning if needed
+                    if beaconDetector.authorizationStatus != "Authorized Always" {
+                        VStack(spacing: 10) {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.orange)
+                                Text("Location Authorization Required")
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                            }
+                            
+                            Text("Please enable 'Always' location access in Settings to monitor beacons in background")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            
+                            Button(action: {
+                                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                                    UIApplication.shared.open(settingsUrl)
+                                }
+                            }) {
+                                Text("Open Settings")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 8)
+                                    .background(Color.blue)
+                                    .cornerRadius(8)
+                            }
+                            .padding(.top, 5)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemGray6))
+                        )
+                        .padding(.horizontal)
+                    }
+                    
+                    Spacer(minLength: 20)
                 }
-                
-                Spacer()
+                .padding(.top)
             }
-            .padding(.top)
             .navigationTitle("iBeacon Monitor")
             .preferredColorScheme(.light) // Force light mode
             .sheet(isPresented: $showEditDeviceIDSheet) {
@@ -309,6 +357,34 @@ struct ContentView: View {
         
         return isActive ? .blue : Color(.systemGray5)
     }
+    
+    private func getStatusIcon(for status: String) -> String {
+        if status.contains("Detected") {
+            return "sensor.tag.radiowaves.forward.fill"
+        } else if status.contains("Sending") {
+            return "arrow.up.circle"
+        } else if status.contains("Complete") {
+            return "checkmark.circle.fill"
+        } else if status.contains("Failed") {
+            return "xmark.circle.fill"
+        } else {
+            return "circle"
+        }
+    }
+    
+    private func getStatusColor(for status: String) -> Color {
+        if status.contains("Detected") {
+            return .blue
+        } else if status.contains("Sending") {
+            return .orange
+        } else if status.contains("Complete") {
+            return .green
+        } else if status.contains("Failed") {
+            return .red
+        } else {
+            return .gray
+        }
+    }
 }
 
 struct InfoRow: View {
@@ -338,6 +414,7 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var authorizationStatus = "Unknown"
     @Published var deviceIdentifier = "Unknown"
     @Published var lastPaymentResponse: String? = nil
+    @Published var transactionStatus: [String]? = nil
     
     // Internal payment service
     private var paymentService: InternalPaymentService?
@@ -347,6 +424,16 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     private var lastSentProximity: CLProximity?
     private var beaconLostTime: Date? = nil // Track when the beacon was lost
     private let requiredLostTimeForNotification: TimeInterval = 10.0 // 10 seconds
+    
+    // Improved reliability variables
+    private var lastNotificationTime: Date? = nil
+    private var minTimeBetweenNotifications: TimeInterval = 5.0 // 5 seconds between notifications
+    private var isProcessingDetection = false // Flag to prevent concurrent processing
+    private var detectionQueue = DispatchQueue(label: "com.beacon.detectionQueue")
+    private let userDefaultsQueue = DispatchQueue(label: "com.beacon.userDefaultsQueue", qos: .background)
+    
+    // Monitoring state
+    private var isMonitoring = false
     
     override init() {
         let uuid = UUID(uuidString: "FA4F992B-0F59-4E61-B0FB-457308078CAB")!
@@ -362,9 +449,15 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         beaconRegion.notifyOnExit = true
         beaconRegion.notifyEntryStateOnDisplay = true
         
-        setupLocationManager()
-        setupNotifications() // Make sure notifications are set up
-        getDeviceIdentifier()
+        // Always do setup operations asynchronously to avoid blocking main thread
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            self.setupLocationManager()
+            self.setupNotifications()
+            self.getDeviceIdentifier() 
+        }
+        
+        print("BeaconDetector initialized")
     }
     
     private func setupLocationManager() {
@@ -374,7 +467,13 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         locationManager.pausesLocationUpdatesAutomatically = false
         locationManager.showsBackgroundLocationIndicator = true
         locationManager.requestAlwaysAuthorization()
-        startScanning()
+        
+        print("Location manager setup complete")
+        
+        // Start monitoring after a slight delay to ensure setup is complete
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.startScanning()
+        }
     }
     
     private func setupNotifications() {
@@ -388,21 +487,29 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     private func getDeviceIdentifier() {
-        // Try to get saved ID first
-        if let savedID = UserDefaults.standard.string(forKey: "device_identifier") {
-            self.deviceIdentifier = savedID
-            return
-        }
-        
-        // If no saved ID, get from device and save
-        if let identifierForVendor = UIDevice.current.identifierForVendor {
-            let id = identifierForVendor.uuidString
-            self.deviceIdentifier = id
+        // Try to get saved ID first (done on background thread)
+        userDefaultsQueue.async { [weak self] in
+            if let savedID = UserDefaults.standard.string(forKey: "device_identifier") {
+                DispatchQueue.main.async {
+                    self?.deviceIdentifier = savedID
+                }
+                return
+            }
             
-            // Save for future use
-            UserDefaults.standard.set(id, forKey: "device_identifier")
-        } else {
-            self.deviceIdentifier = "Unavailable"
+            // If no saved ID, get from device and save
+            if let identifierForVendor = UIDevice.current.identifierForVendor {
+                let id = identifierForVendor.uuidString
+                DispatchQueue.main.async {
+                    self?.deviceIdentifier = id
+                }
+                
+                // Save for future use
+                UserDefaults.standard.set(id, forKey: "device_identifier")
+            } else {
+                DispatchQueue.main.async {
+                    self?.deviceIdentifier = "Unavailable"
+                }
+            }
         }
     }
     
@@ -429,16 +536,25 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     func startScanning() {
+        if isMonitoring {
+            return // Already monitoring
+        }
+        
         if locationManager.authorizationStatus == .authorizedAlways {
             print("Starting to scan for beacons...")
+            
+            // Stop any existing monitoring first (to reset)
+            locationManager.stopMonitoring(for: beaconRegion)
+            locationManager.stopRangingBeacons(satisfying: beaconRegion.beaconIdentityConstraint)
+            
+            // Start fresh
             locationManager.startMonitoring(for: beaconRegion)
             locationManager.startRangingBeacons(satisfying: beaconRegion.beaconIdentityConstraint)
             
             // Request initial state
             locationManager.requestState(for: beaconRegion)
             
-            // Start ranging immediately
-            locationManager.startRangingBeacons(satisfying: beaconRegion.beaconIdentityConstraint)
+            isMonitoring = true
             
             print("Scanning started for UUID: \(beaconRegion.uuid.uuidString)")
             print("Major: \(String(describing: beaconRegion.major)), Minor: \(String(describing: beaconRegion.minor))")
@@ -447,57 +563,84 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
+    func restartScanning() {
+        isMonitoring = false
+        startScanning()
+    }
+    
     func locationManager(_ manager: CLLocationManager, didRange beacons: [CLBeacon], satisfying beaconConstraint: CLBeaconIdentityConstraint) {
         print("Ranging beacons: Found \(beacons.count) beacons")
         
-        DispatchQueue.main.async {
-            if let nearestBeacon = beacons.first {
-                print("Nearest beacon: UUID: \(nearestBeacon.uuid.uuidString)")
-                print("Major: \(nearestBeacon.major), Minor: \(nearestBeacon.minor)")
-                
-                // Check if this is a reappearance after being lost for sufficient time
-                let shouldShowNotification = !self.isBeaconDetected && 
-                                            self.beaconLostTime != nil &&
-                                            Date().timeIntervalSince(self.beaconLostTime!) >= self.requiredLostTimeForNotification
-                
-                if !self.isBeaconDetected {
-                    // Beacon was just detected
-                    if shouldShowNotification {
-                        self.callPaymentAPIAndNotify()
-                    } else if self.beaconLostTime == nil {
-                        // First detection ever - show notification
-                        self.callPaymentAPIAndNotify()
-                    }
-                }
-                
-                // Reset beacon lost time since we're detecting it now
-                self.beaconLostTime = nil
-                self.isBeaconDetected = true
-                
-                // Check if proximity changed 
-                if self.lastSentProximity != nearestBeacon.proximity {
-                    self.lastSentProximity = nearestBeacon.proximity
+        // Process beacon data on detection queue to avoid main thread I/O
+        detectionQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            if self.isProcessingDetection {
+                print("Already processing detection - skipping")
+                return
+            }
+            
+            self.isProcessingDetection = true
+            
+            let nearestBeacon = beacons.first
+            
+            // Main thread UI updates
+            DispatchQueue.main.async {
+                if let nearestBeacon = nearestBeacon {
+                    print("Nearest beacon: UUID: \(nearestBeacon.uuid.uuidString)")
+                    print("Major: \(nearestBeacon.major), Minor: \(nearestBeacon.minor)")
                     
-                    switch nearestBeacon.proximity {
-                    case .immediate:
-                        self.proximityString = "Immediate"
-                    case .near:
-                        self.proximityString = "Near"
-                    case .far:
-                        self.proximityString = "Far"
-                    default:
-                        self.proximityString = "Unknown"
+                    // Notify on conditions:
+                    // 1. Beacon was just detected (not previously detected)
+                    // 2. Beacon was lost for sufficient time (10s) and reappeared
+                    // 3. Enough time has passed since last notification (5s)
+                    let now = Date()
+                    let shouldNotifyNewDetection = !self.isBeaconDetected
+                    let shouldNotifyReappearance = self.beaconLostTime != nil && 
+                                                 now.timeIntervalSince(self.beaconLostTime!) >= self.requiredLostTimeForNotification
+                    let enoughTimeSinceLastNotification = self.lastNotificationTime == nil || 
+                                                        now.timeIntervalSince(self.lastNotificationTime!) >= self.minTimeBetweenNotifications
+                    
+                    // Determine if we should show a notification
+                    let shouldNotify = (shouldNotifyNewDetection || shouldNotifyReappearance) && enoughTimeSinceLastNotification
+                    
+                    if shouldNotify {
+                        print("Sending notification - condition: new=\(shouldNotifyNewDetection), reappear=\(shouldNotifyReappearance), timeout=\(enoughTimeSinceLastNotification)")
+                        self.callPaymentAPIAndNotify()
+                        self.lastNotificationTime = now
                     }
+                    
+                    // Reset beacon lost time since we're detecting it now
+                    self.beaconLostTime = nil
+                    self.isBeaconDetected = true
+                    
+                    // Check if proximity changed 
+                    if self.lastSentProximity != nearestBeacon.proximity {
+                        self.lastSentProximity = nearestBeacon.proximity
+                        
+                        switch nearestBeacon.proximity {
+                        case .immediate:
+                            self.proximityString = "Immediate"
+                        case .near:
+                            self.proximityString = "Near"
+                        case .far:
+                            self.proximityString = "Far"
+                        default:
+                            self.proximityString = "Unknown"
+                        }
+                    }
+                } else {
+                    if self.isBeaconDetected {
+                        // Beacon was just lost - record the time
+                        print("Beacon lost - no beacons in range")
+                        self.beaconLostTime = Date()
+                    }
+                    self.isBeaconDetected = false
+                    self.proximityString = "Unknown"
+                    self.lastSentProximity = nil
                 }
-            } else {
-                if self.isBeaconDetected {
-                    // Beacon was just lost - record the time
-                    print("Beacon lost - no beacons in range")
-                    self.beaconLostTime = Date()
-                }
-                self.isBeaconDetected = false
-                self.proximityString = "Unknown"
-                self.lastSentProximity = nil
+                
+                self.isProcessingDetection = false
             }
         }
     }
@@ -506,6 +649,11 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
         print("Entered region: \(region.identifier)")
         // We don't show notification here - we wait for ranging to confirm
+        
+        // Request beacon ranging immediately
+        if let beaconRegion = region as? CLBeaconRegion {
+            locationManager.startRangingBeacons(satisfying: beaconRegion.beaconIdentityConstraint)
+        }
     }
     
     func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
@@ -538,27 +686,77 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
                 self.isBeaconDetected = false
             case .unknown:
                 print("Unknown beacon region state")
+                // Restart monitoring if in unknown state
+                self.restartScanning()
             }
         }
     }
     
+    // Handle any ranging/monitoring errors
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Location manager failed with error: \(error.localizedDescription)")
+        
+        // Restart monitoring after a delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.restartScanning()
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
+        print("Monitoring failed for region \(region?.identifier ?? "unknown"): \(error.localizedDescription)")
+        
+        // Restart monitoring after a delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.restartScanning()
+        }
+    }
+    
     private func callPaymentAPIAndNotify() {
+        // Show initial detection notification
+        showNotification(title: "Beacon Detected", message: "Sending transaction now...")
+        
+        // Update UI transaction status
+        DispatchQueue.main.async {
+            self.transactionStatus = ["Beacon Detected", "Sending transaction..."]
+        }
+        
         // Use the internal payment service instead
         paymentService?.requestPayment { result in
-            // Fix for "Trailing closure passed to parameter of type 'DispatchWorkItem'"
-            let mainQueue = DispatchQueue.main
-            mainQueue.async(execute: {
+            // Process payment result on a background queue
+            DispatchQueue.global(qos: .userInitiated).async {
+                let statusUpdate: String
+                let responseMessage: String
+                let notificationTitle: String
+                let notificationMessage: String
+                
                 switch result {
                 case .success(let response):
-                    let responseMessage = response.message ?? "Payment request successful"
-                    self.lastPaymentResponse = responseMessage
-                    self.showNotification(title: "Beacon Detected", message: "Payment API: \(responseMessage)")
+                    responseMessage = response.message ?? "Payment request successful"
+                    statusUpdate = "Transaction Complete"
+                    notificationTitle = "Transaction Complete"
+                    notificationMessage = "Payment API: \(responseMessage)"
                     
                 case .failure(let error):
-                    self.lastPaymentResponse = "Error: \(error.localizedDescription)"
-                    self.showNotification(title: "Beacon Detected", message: "Payment API Error: \(error.localizedDescription)")
+                    responseMessage = "Error: \(error.localizedDescription)"
+                    statusUpdate = "Transaction Failed"
+                    notificationTitle = "Transaction Failed"
+                    notificationMessage = "Payment API Error: \(error.localizedDescription)"
                 }
-            })
+                
+                // Update UI on main thread
+                DispatchQueue.main.async {
+                    self.lastPaymentResponse = responseMessage
+                    
+                    // Update transaction status list
+                    if var currentStatus = self.transactionStatus {
+                        currentStatus.append(statusUpdate)
+                        self.transactionStatus = currentStatus
+                    }
+                }
+                
+                // Show notification
+                self.showNotification(title: notificationTitle, message: notificationMessage)
+            }
         }
     }
     
@@ -571,8 +769,11 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         // Make the notification more noticeable
         content.interruptionLevel = .timeSensitive
         
+        // Add unique identifier based on timestamp to prevent notification collapsing
+        let identifier = "\(title)-\(Date().timeIntervalSince1970)"
+        
         let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
+            identifier: identifier,
             content: content,
             trigger: nil
         )
@@ -580,6 +781,8 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Error showing notification: \(error)")
+            } else {
+                print("Successfully displayed notification: \(title)")
             }
         }
     }
@@ -591,12 +794,16 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func updateDeviceIdentifier(_ newDeviceID: String) {
         self.deviceIdentifier = newDeviceID
-        UserDefaults.standard.set(newDeviceID, forKey: "device_identifier")
+        userDefaultsQueue.async {
+            UserDefaults.standard.set(newDeviceID, forKey: "device_identifier")
+        }
     }
     
     func resetToDefaultIdentifier() {
         // Remove saved ID
-        UserDefaults.standard.removeObject(forKey: "device_identifier")
+        userDefaultsQueue.async {
+            UserDefaults.standard.removeObject(forKey: "device_identifier")
+        }
         
         // Get fresh device identifier
         if let identifierForVendor = UIDevice.current.identifierForVendor {

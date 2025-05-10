@@ -11,9 +11,7 @@ app.use(cors());
 
 // MongoDB connection configuration
 const getMongoUri = () => {
-  // Check if we're running in Coolify with linked MongoDB service
   if (process.env.MONGODB_SERVICE_HOST) {
-    // Coolify automatically sets these environment variables when services are linked
     const host = process.env.MONGODB_SERVICE_HOST;
     const port = process.env.MONGODB_SERVICE_PORT || "27017";
     const user = process.env.MONGODB_SERVICE_USER;
@@ -23,7 +21,6 @@ const getMongoUri = () => {
     return `mongodb://${user}:${password}@${host}:${port}/${database}`;
   }
 
-  // Fallback to direct URI if provided
   return process.env.MONGODB_URI;
 };
 
