@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { sendSol } = require("../payer");
+const { sendSol } = require("../components/payer");
+const { verifyTransaction } = require("../components/verifyTx");
 
 /**
  * @swagger
@@ -28,6 +29,25 @@ const { sendSol } = require("../payer");
  *         recipientAddress:
  *           type: string
  *           description: Wallet address to send SOL to
+ *
+ *     TransactionVerification:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           description: Whether the transaction verification was successful
+ *         sender:
+ *           type: string
+ *           description: Sender wallet address
+ *         recipient:
+ *           type: string
+ *           description: Recipient wallet address
+ *         amount:
+ *           type: number
+ *           description: Amount of SOL transferred
+ *         status:
+ *           type: string
+ *           description: Transaction status
  */
 
 /**
@@ -71,6 +91,90 @@ router.get("/", async (req, res) => {
     });
   } catch (error) {
     console.error("Payment error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /payment/verify/{txHash}:
+ *   get:
+ *     summary: Verify a Solana transaction and get sender, recipient, and amount
+ *     tags: [Payment]
+ *     parameters:
+ *       - in: path
+ *         name: txHash
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The transaction hash/signature to verify
+ *     responses:
+ *       200:
+ *         description: Transaction verification successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TransactionVerification'
+ *       404:
+ *         description: Transaction not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   description: Success status
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *       500:
+ *         description: Error verifying transaction
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   description: Success status
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ */
+router.get("/verify/:txHash", async (req, res) => {
+  try {
+    const { txHash } = req.params;
+
+    if (!txHash) {
+      return res.status(400).json({
+        success: false,
+        error: "Transaction hash is required",
+      });
+    }
+
+    console.log(`GET /payment/verify/${txHash} - Verifying transaction`);
+
+    const transactionDetails = await verifyTransaction(txHash);
+
+    res.status(200).json({
+      success: true,
+      ...transactionDetails,
+    });
+  } catch (error) {
+    console.error("Transaction verification error:", error);
+
+    // Handle specific error for transaction not found
+    if (error.message === "Transaction not found") {
+      return res.status(404).json({
+        success: false,
+        error: "Transaction not found",
+      });
+    }
+
     res.status(500).json({
       success: false,
       error: error.message,
