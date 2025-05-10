@@ -20,6 +20,22 @@ const clientId =
 //Free one: BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ
 // from dashboard: BO64YmrgP9IlUvt2__kcdilBAdRuC7Q7-uGOajbW5UNpN69GLTFJmCFF1E0X-V2NLs5OM7VapVZuWCF-KTNT5kg
 
+// Function to format console output with clickable links
+const formatConsoleOutput = (output: string) => {
+  if (!output) return "";
+
+  // Regular expression to detect URLs
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+  // Replace URLs with HTML link tags
+  const formattedOutput = output.replace(
+    urlRegex,
+    '<a href="$&" target="_blank" rel="noopener noreferrer" class="console-link">$&</a>'
+  );
+
+  return formattedOutput;
+};
+
 export default function Wallet() {
   const [web3auth, setWeb3auth] = useState<Web3Auth | null>(null);
   const [provider, setProvider] = useState<IProvider | null>(null);
@@ -33,12 +49,18 @@ export default function Wallet() {
   const [walletAddress, setWalletAddress] = useState<string>("");
   const [walletBalance, setWalletBalance] = useState<string>("");
   const [solBalance, setSolBalance] = useState<string>("0");
+  const [disposableBalance, setDisposableBalance] = useState<string>("0");
   const [chainInfo, setChainInfo] = useState<any>(null);
 
   // API data state
   const [apiData, setApiData] = useState<any>(null);
   const [apiLoading, setApiLoading] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Transaction loading state
+  const [transactionLoading, setTransactionLoading] = useState<boolean>(false);
+  const [transactionProgress, setTransactionProgress] = useState<number>(0);
+  const [transactionStatus, setTransactionStatus] = useState<string>("");
 
   // Get custom chain configs for your chain
   const chainConfig = getSolanaChainConfig(0x3)!; // 0x3 Solana Devnet
@@ -48,6 +70,33 @@ export default function Wallet() {
     const value = parseFloat(lamports) / 1000000000;
     return value.toFixed(4);
   };
+
+  const [topupAmount, setTopupAmount] = useState<string>("0.1");
+  const [topupError, setTopupError] = useState<string>("");
+
+  // Fetch user's disposable balance from API
+  const fetchDisposableBalance = async () => {
+    if (!walletAddress) return;
+
+    try {
+      const userData = await apiService.getUserByWalletAddress(walletAddress);
+      if (userData && userData.balanceTransferred !== undefined) {
+        // Round to 4 decimal places
+        const formattedBalance = userData.balanceTransferred.toFixed(4);
+        setDisposableBalance(formattedBalance);
+      }
+    } catch (error) {
+      console.error("Error fetching disposable balance:", error);
+      // Don't show error to user, just log it
+    }
+  };
+
+  useEffect(() => {
+    // Fetch disposable balance whenever wallet address changes
+    if (walletAddress) {
+      fetchDisposableBalance();
+    }
+  }, [walletAddress]);
 
   useEffect(() => {
     const init = async () => {
@@ -211,6 +260,9 @@ export default function Wallet() {
           const balance = await rpc.getBalance();
           setWalletBalance(balance);
           setSolBalance(lamportsToSol(balance));
+
+          // Fetch disposable balance
+          await fetchDisposableBalance();
         } catch (error) {
           console.error("Error fetching balance:", error);
         }
@@ -405,6 +457,226 @@ export default function Wallet() {
     }
   };
 
+  // Function to copy text to clipboard
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        // Show success feedback
+        const copyButtons = document.querySelectorAll(".copy-button");
+        copyButtons.forEach((button) => {
+          if (button.getAttribute("data-signature") === text) {
+            // Add a temporary success class
+            button.classList.add("copy-success");
+
+            // Reset after a short delay
+            setTimeout(() => {
+              button.classList.remove("copy-success");
+            }, 1000);
+          }
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to copy signature: ", err);
+      });
+  };
+
+  // Function to create a shortened version of the signature with a copy button
+  const getFormattedSignature = (signature: string) => {
+    const shortSignature = `${signature.slice(0, 4)}...${signature.slice(-4)}`;
+    const solscanUrl = `https://solscan.io/tx/${signature}?cluster=devnet`;
+
+    return `<a href="${solscanUrl}" target="_blank" rel="noopener noreferrer" class="console-link">${shortSignature}</a> <span class="copy-button" data-signature="${signature}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" /></svg></span>`;
+  };
+
+  // Add event listener for copy buttons when the component mounts
+  useEffect(() => {
+    const handleCopyClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains("copy-button")) {
+        const signature = target.getAttribute("data-signature");
+        if (signature) {
+          copyToClipboard(signature);
+        }
+      }
+    };
+
+    document.addEventListener("click", handleCopyClick);
+
+    // Clean up the event listener when the component unmounts
+    return () => {
+      document.removeEventListener("click", handleCopyClick);
+    };
+  }, []);
+
+  // Function to send SOL to a specific address
+  const sendSolToAddress = async () => {
+    if (!provider) {
+      uiConsole("provider not initialized yet");
+      return;
+    }
+
+    try {
+      // Validate topup amount against wallet balance
+      const topupAmountNum = parseFloat(topupAmount);
+      const solBalanceNum = parseFloat(solBalance);
+
+      if (topupAmountNum <= 0) {
+        setTopupError("Amount must be greater than 0");
+        return;
+      }
+
+      if (topupAmountNum > solBalanceNum) {
+        setTopupError(
+          "Insufficient balance. You cannot send more than your wallet holds."
+        );
+        return;
+      }
+
+      // Clear any previous errors
+      setTopupError("");
+
+      // Start loading and reset progress
+      setTransactionLoading(true);
+      setTransactionProgress(10);
+      setTransactionStatus("Initiating transaction...");
+
+      setApiLoading(true);
+      uiConsole("Sending transaction... Please wait for confirmation.");
+
+      // Simulate progress while waiting for blockchain
+      let progressInterval = setInterval(() => {
+        setTransactionProgress((prev) => {
+          if (prev < 70) return prev + 5;
+          return prev;
+        });
+      }, 1000);
+
+      setTransactionProgress(20);
+      setTransactionStatus("Sending transaction to Solana network...");
+
+      const rpc = new RPC(provider);
+      const receipt = await rpc.sendSolToAddress(
+        "PAYvoS6ezYo5kS66dMDpZfwVdshfgpRzs6vDzfZ1tEe",
+        topupAmount
+      );
+
+      setTransactionProgress(70);
+      setTransactionStatus("Transaction sent! Waiting for confirmation...");
+
+      if (receipt.startsWith("Transaction failed:")) {
+        clearInterval(progressInterval);
+        setTransactionProgress(100);
+        setTransactionStatus("Transaction failed");
+        setTimeout(() => setTransactionLoading(false), 1500);
+        uiConsole(receipt);
+      } else {
+        // Refresh balance after successful transaction
+        setTransactionProgress(80);
+        setTransactionStatus("Transaction confirmed! Updating balances...");
+
+        const newBalance = await rpc.getBalance();
+        setWalletBalance(newBalance);
+        setSolBalance(lamportsToSol(newBalance));
+
+        // Submit transaction data to the backend
+        try {
+          setTransactionProgress(90);
+          setTransactionStatus("Syncing with database...");
+
+          const transactionData = {
+            walletAddress: walletAddress,
+            transactionHash: receipt,
+          };
+
+          const apiResponse = await apiService.submitTransaction(
+            transactionData
+          );
+          // Only log API response to console, not to UI
+          console.log("API Response:", apiResponse);
+
+          // Refresh disposable balance
+          await fetchDisposableBalance();
+
+          setTransactionProgress(100);
+          setTransactionStatus("Transaction complete!");
+
+          // Short delay to show success before closing modal
+          setTimeout(() => setTransactionLoading(false), 1500);
+
+          // Show simplified success message with transaction details
+          uiConsole(
+            `✅ Payment Successfully Completed!\n\n` +
+              `Amount: ${topupAmount} SOL\n` +
+              `Signature: ${getFormattedSignature(receipt)}\n` +
+              `Balance: ${parseFloat(lamportsToSol(newBalance)).toFixed(
+                4
+              )} SOL\n` +
+              `Credits: ${disposableBalance} SOL`
+          );
+        } catch (apiError) {
+          clearInterval(progressInterval);
+          setTransactionProgress(95);
+          setTransactionStatus("Transaction successful, but API update failed");
+
+          // Short delay to show status before closing modal
+          setTimeout(() => setTransactionLoading(false), 1500);
+
+          // Log the error to the browser console
+          console.error("API Error:", apiError);
+
+          // Show simplified error message to the user
+          uiConsole(
+            `⚠️ Payment Partially Completed\n\n` +
+              `Transaction was confirmed on the blockchain, but we couldn't update your account.\n` +
+              `Amount: ${topupAmount} SOL\n` +
+              `Signature: ${getFormattedSignature(receipt)}\n` +
+              `Balance: ${parseFloat(lamportsToSol(newBalance)).toFixed(
+                4
+              )} SOL\n\n` +
+              `Your credits may take a moment to update.`
+          );
+        }
+      }
+
+      clearInterval(progressInterval);
+    } catch (error) {
+      setTransactionProgress(100);
+      setTransactionStatus("Error occurred during transaction");
+      setTimeout(() => setTransactionLoading(false), 1500);
+      uiConsole(
+        `❌ Payment Failed\n\n` +
+          `There was an error processing your transaction.\n` +
+          `Error: ${
+            error instanceof Error ? error.message : String(error)
+          }\n\n` +
+          `Please try again later.`
+      );
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  // Update topup amount handler to validate in real-time
+  const handleTopupAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newAmount = e.target.value;
+    setTopupAmount(newAmount);
+
+    // Real-time validation
+    const newAmountNum = parseFloat(newAmount);
+    const solBalanceNum = parseFloat(solBalance);
+
+    if (newAmountNum <= 0) {
+      setTopupError("Amount must be greater than 0");
+    } else if (newAmountNum > solBalanceNum) {
+      setTopupError(
+        `Insufficient balance (max: ${solBalanceNum.toFixed(4)} SOL)`
+      );
+    } else {
+      setTopupError(""); // Clear error when input is valid
+    }
+  };
+
   function uiConsole(...args: any[]): void {
     const logMessage = args
       .map((arg) => {
@@ -433,7 +705,15 @@ export default function Wallet() {
           </div>
           <div className="balance-display">
             <span className="balance-label">Balance:</span>
-            <span className="balance-value">{solBalance} SOL</span>
+            <span className="balance-value">
+              {parseFloat(solBalance).toFixed(4)} SOL
+            </span>
+          </div>
+          <div className="balance-display">
+            <span className="balance-label">Available Credits:</span>
+            <span className="balance-value disposable-balance">
+              {disposableBalance} SOL
+            </span>
           </div>
         </div>
       </div>
@@ -442,109 +722,70 @@ export default function Wallet() {
       <div className="action-container">
         <h2>Wallet Actions</h2>
 
-        <div className="action-row">
-          <div className="action-group">
-            <h3>Account</h3>
-            <button onClick={getUserInfo} className="wallet-action-button">
-              Get User Info
-            </button>
-            <button onClick={getAccounts} className="wallet-action-button">
-              Refresh Address
-            </button>
-            <button onClick={getBalance} className="wallet-action-button">
-              Refresh Balance
-            </button>
-            <button onClick={authenticateUser} className="wallet-action-button">
-              Get ID Token
-            </button>
-          </div>
-
-          <div className="action-group">
-            <h3>Transactions</h3>
-            <button onClick={sendTransaction} className="wallet-action-button">
-              Send Transaction
-            </button>
-            <button
-              onClick={sendVersionTransaction}
-              className="wallet-action-button"
-            >
-              Send Version Transaction
-            </button>
-            <button onClick={signMessage} className="wallet-action-button">
-              Sign Message
-            </button>
-            <button onClick={getPrivateKey} className="wallet-action-button">
-              Get Private Key
-            </button>
-          </div>
-        </div>
-
-        <div className="action-row">
-          <div className="action-group">
-            <h3>Chain Management</h3>
-            <button onClick={addChain} className="wallet-action-button">
-              Add Chain
-            </button>
-            <button onClick={switchChain} className="wallet-action-button">
-              Switch Chain
-            </button>
-            <button onClick={getChainInfo} className="wallet-action-button">
-              Refresh Chain Info
-            </button>
-          </div>
-
-          <div className="action-group">
-            <h3>Advanced Signing</h3>
-            <button
-              onClick={signVersionedTransaction}
-              className="wallet-action-button"
-            >
-              Sign Versioned Transaction
-            </button>
-            <button
-              onClick={signAllVersionedTransaction}
-              className="wallet-action-button"
-            >
-              Sign All Versioned Transactions
-            </button>
-            <button
-              onClick={signAllTransaction}
-              className="wallet-action-button"
-            >
-              Sign All Transactions
-            </button>
-          </div>
-        </div>
-
-        {/* <div className="action-row session-row">
-          <button
-            onClick={logout}
-            className="wallet-action-button logout-button"
-          >
-            Disconnect Wallet
-          </button>
-        </div> */}
-      </div>
-
-      {/* API Integration Section */}
-      <div className="api-section">
-        <h2>API Integration</h2>
-        <div className="action-card">
-          <h3>Test API Connection</h3>
-          <button onClick={fetchUsers} disabled={apiLoading}>
-            {apiLoading ? "Loading..." : "Fetch Users"}
-          </button>
-
-          {apiError && <div className="api-error">{apiError}</div>}
-
-          {apiData && (
-            <div className="api-results">
-              <h4>API Results:</h4>
-              <pre>{JSON.stringify(apiData, null, 2)}</pre>
+        <section className="topup-section">
+          <h3 className="topup-title">Topup Balance</h3>
+          <div className="topup-container">
+            <div className="topup-input-wrapper">
+              <input
+                type="number"
+                value={topupAmount}
+                onChange={handleTopupAmountChange}
+                min="0.000001"
+                step="0.01"
+                className={`topup-input ${
+                  topupError ? "topup-input-error" : ""
+                }`}
+                placeholder="0.0"
+                disabled={apiLoading}
+              />
+              <span className="sol-badge">SOL</span>
             </div>
-          )}
-        </div>
+            {topupError && (
+              <div className="topup-error">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>{topupError}</span>
+              </div>
+            )}
+            <button
+              onClick={sendSolToAddress}
+              className="topup-button"
+              disabled={apiLoading || !!topupError}
+            >
+              {apiLoading ? "Processing..." : "Topup Balance"}
+            </button>
+          </div>
+          <div className="recipient-address">
+            <svg
+              className="recipient-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            ></svg>
+            <span>PAYvoS6ezYo5kS66dMDpZfwVdshfgpRzs6vDzfZ1tEe</span>
+          </div>
+          <div className="api-note">
+            <small>
+              Note: Transaction details will be recorded in our system.
+            </small>
+          </div>
+        </section>
       </div>
+
+      <button onClick={getPrivateKey} className="get-key-button">
+        Get Private Key
+      </button>
     </div>
   );
 
@@ -571,9 +812,52 @@ export default function Wallet() {
         unloggedInView
       )}
 
+      {/* Transaction Loading Modal */}
+      {transactionLoading && (
+        <div className="transaction-modal-overlay">
+          <div className="transaction-modal">
+            <div className="transaction-modal-header">
+              <h3>Processing Transaction</h3>
+              <p>Please do not close this window</p>
+            </div>
+
+            <div className="transaction-progress-container">
+              <div
+                className="transaction-progress-bar"
+                style={{ width: `${transactionProgress}%` }}
+              >
+                <div className="transaction-progress-glow"></div>
+              </div>
+            </div>
+
+            <div className="transaction-status">
+              <p>{transactionStatus}</p>
+              <div className="transaction-progress-percent">
+                {transactionProgress}%
+              </div>
+            </div>
+
+            <div className="transaction-modal-footer">
+              <div className="transaction-animation">
+                <div className="transaction-pulse"></div>
+                <svg viewBox="0 0 24 24" className="transaction-icon">
+                  <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14h2v2h-2v-2zm0-10h2v8h-2V6z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </div>
+              <p className="transaction-warning">
+                Please wait until the transaction is complete
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="console-output">
         <h3>Console Output</h3>
-        <pre>{consoleOutput}</pre>
+        <pre dangerouslySetInnerHTML={{ __html: consoleOutput }}></pre>
       </div>
     </div>
   );

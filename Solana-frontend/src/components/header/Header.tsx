@@ -142,6 +142,7 @@ export default function Header() {
     setIsConnected(false);
     setWalletAddress("");
     setIsDropdownOpen(false);
+    navigate("/");
     window.location.reload();
   };
 

@@ -9,6 +9,22 @@ interface UserData {
   walletAddress: string;
 }
 
+interface TransactionData {
+  walletAddress: string;
+  transactionHash: string;
+}
+
+interface UserDetails {
+  _id: string;
+  name: string;
+  email: string;
+  walletAddress: string;
+  balanceTransferred: number;
+  loggedInAt: string;
+  createdAt: string;
+  __v: number;
+}
+
 class ApiService {
   /**
    * Get all users
@@ -30,16 +46,13 @@ class ApiService {
   /**
    * Get user by wallet address
    */
-  async getUserByWalletAddress(walletAddress: string) {
+  async getUserByWalletAddress(walletAddress: string): Promise<UserDetails> {
     try {
-      const response = await axios.get(
-        `${API_URL}/users/wallet/${walletAddress}`,
-        {
-          headers: {
-            accept: "application/json",
-          },
-        }
-      );
+      const response = await axios.get(`${API_URL}/users/${walletAddress}`, {
+        headers: {
+          accept: "application/json",
+        },
+      });
       return response.data;
     } catch (error) {
       console.error(
@@ -64,6 +77,28 @@ class ApiService {
       return response.data;
     } catch (error) {
       console.error("Error creating user:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Submit transaction data to the backend
+   */
+  async submitTransaction(transactionData: TransactionData) {
+    try {
+      const response = await axios.post(
+        `${API_URL}/transactions`,
+        transactionData,
+        {
+          headers: {
+            accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error submitting transaction:", error);
       throw error;
     }
   }
