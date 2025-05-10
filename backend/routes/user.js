@@ -23,6 +23,10 @@ module.exports = router;
  *         walletAddress:
  *           type: string
  *           description: Wallet address of the user
+ *         balanceTransferred:
+ *           type: number
+ *           description: Amount of balance transferred by the user
+ *           default: 0
  *         createdAt:
  *           type: string
  *           format: date
