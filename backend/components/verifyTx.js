@@ -7,7 +7,7 @@ require("dotenv").config();
 /**
  * Verifies a transaction on Solana devnet and extracts the sender, amount, and recipient
  * @param {string} txHash - The transaction signature/hash to verify
- * @returns {Promise<Object>} - Transaction details including sender, amount, and recipient
+ * @returns {Promise<Object>} - Transaction details including sender, amount, recipient and success status
  */
 async function verifyTransaction(txHash) {
   try {
@@ -24,7 +24,10 @@ async function verifyTransaction(txHash) {
     });
 
     if (!txDetails) {
-      throw new Error("Transaction not found");
+      return {
+        success: false,
+        message: "Transaction not found",
+      };
     }
 
     // Extract transfer instruction from transaction
@@ -38,7 +41,10 @@ async function verifyTransaction(txHash) {
     );
 
     if (!transferInstruction) {
-      throw new Error("No transfer instruction found in transaction");
+      return {
+        success: false,
+        message: "No transfer instruction found in transaction",
+      };
     }
 
     // Get accounts involved in the transaction
@@ -56,12 +62,16 @@ async function verifyTransaction(txHash) {
     // Convert lamports to SOL for easier readability
     const amountInSol = amount / LAMPORTS_PER_SOL;
 
+    // Check if transaction was successful
+    const status = txDetails.meta.err ? "failed" : "success";
+
     return {
+      success: true,
       sender,
       recipient,
       amount: amountInSol,
       amountInLamports: amount,
-      status: txDetails.meta.err ? "failed" : "success",
+      status,
       blockTime: txDetails.blockTime
         ? new Date(txDetails.blockTime * 1000).toISOString()
         : null,
@@ -69,7 +79,10 @@ async function verifyTransaction(txHash) {
     };
   } catch (error) {
     console.error("Error verifying transaction:", error);
-    throw error;
+    return {
+      success: false,
+      message: error.message,
+    };
   }
 }
 
