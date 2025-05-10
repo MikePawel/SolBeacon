@@ -60,7 +60,14 @@ const { verifyTransaction } = require("../components/verifyTx");
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Transaction'
+ *               type: object
+ *               properties:
+ *                 walletAddress:
+ *                   type: string
+ *                 transactions:
+ *                   type: array
+ *                   items:
+ *                     type: string
  *       400:
  *         description: Invalid input or transaction already exists
  *       404:
@@ -93,42 +100,36 @@ router.post("/", async (req, res) => {
 
     // Check if transaction hash already exists
     if (walletTransactions) {
-      const hashExists = walletTransactions.transactions.some(
-        (tx) => tx.transactionHash === transactionHash
-      );
-
-      if (hashExists) {
+      if (walletTransactions.transactions.includes(transactionHash)) {
         return res.status(400).json({
           message: "Transaction hash already exists for this wallet",
         });
       }
 
       // Add new transaction hash to the array
-      walletTransactions.transactions.push({
-        transactionHash,
-        createdAt: new Date(),
-      });
+      walletTransactions.transactions.push(transactionHash);
     } else {
       // Create new wallet transaction record
       walletTransactions = new Transaction({
         walletAddress,
-        transactions: [
-          {
-            transactionHash,
-            createdAt: new Date(),
-          },
-        ],
+        transactions: [transactionHash],
       });
     }
 
     // Save the transaction
-    const savedTransaction = await walletTransactions.save();
+    await walletTransactions.save();
 
     // Update user balance transferred
     user.balanceTransferred += 1; // Increment by 1 for each transaction
     await user.save();
 
-    res.status(201).json(savedTransaction);
+    // Return the simplified response
+    const simplifiedResponse = {
+      walletAddress: walletTransactions.walletAddress,
+      transactions: walletTransactions.transactions,
+    };
+
+    res.status(201).json(simplifiedResponse);
   } catch (error) {
     console.error("Error processing transaction:", error);
     res.status(500).json({ message: error.message });
@@ -150,11 +151,18 @@ router.post("/", async (req, res) => {
  *         description: Wallet address of the user
  *     responses:
  *       200:
- *         description: User's transaction record
+ *         description: List of transaction hashes
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Transaction'
+ *               type: object
+ *               properties:
+ *                 walletAddress:
+ *                   type: string
+ *                 transactions:
+ *                   type: array
+ *                   items:
+ *                     type: string
  *       404:
  *         description: User or transaction record not found
  *       500:
@@ -171,15 +179,23 @@ router.get("/:walletAddress", async (req, res) => {
     }
 
     // Get transaction record for the user
-    const transactions = await Transaction.findOne({ walletAddress });
+    const transactionRecord = await Transaction.findOne({ walletAddress });
 
-    if (!transactions) {
+    if (!transactionRecord) {
       return res.status(404).json({
         message: "No transaction records found for this wallet",
       });
     }
 
-    res.status(200).json(transactions);
+    // Simplify the response to just include transaction hashes
+    const simplifiedResponse = {
+      walletAddress: transactionRecord.walletAddress,
+      transactions: transactionRecord.transactions.map(
+        (tx) => tx.transactionHash
+      ),
+    };
+
+    res.status(200).json(simplifiedResponse);
   } catch (error) {
     console.error("Error retrieving transactions:", error);
     res.status(500).json({ message: error.message });
