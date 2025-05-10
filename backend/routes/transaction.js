@@ -5,7 +5,7 @@ const User = require("../models/users");
 const { verifyTransaction } = require("../components/verifyTx");
 
 // The recipient address that we accept payments to
-const ACCEPTED_RECIPIENT = "GETgWrW67ADQtc1Udv4xK3ykwtJDyVw7gzJXEDLvDSZi";
+const ACCEPTED_RECIPIENT = "PAYvoS6ezYo5kS66dMDpZfwVdshfgpRzs6vDzfZ1tEe";
 
 /**
  * @swagger
