@@ -13,6 +13,7 @@ import { getDefaultExternalAdapters } from "@web3auth/default-solana-adapter";
 import RPC from "../../solanaRPC";
 import apiService from "../../services/api";
 import "./wallet.css";
+import CreatePassword from "./createPassword";
 
 // Constants
 const clientId =
@@ -803,6 +804,7 @@ export default function Wallet() {
       <button onClick={getPrivateKey} className="get-key-button">
         {showingPrivateKey ? "Hide Private Key" : "Get Private Key"}
       </button>
+      <CreatePassword />
     </div>
   );
 
@@ -874,6 +876,7 @@ export default function Wallet() {
 
       <div className="console-output">
         <h3>Console Output</h3>
+
         <pre dangerouslySetInnerHTML={{ __html: consoleOutput }}></pre>
       </div>
     </div>

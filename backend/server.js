@@ -6,8 +6,14 @@ const mongoose = require("mongoose");
 const { swaggerUi, swaggerDocs } = require("./swagger");
 const cors = require("cors");
 
-// Enable CORS for all routes
-app.use(cors());
+// Enable CORS for specific origin
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGIN || "https://master-fe.mikepawel.com/ ",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // MongoDB connection configuration
 const getMongoUri = () => {
