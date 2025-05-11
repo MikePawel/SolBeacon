@@ -4,34 +4,6 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const { swaggerUi, swaggerDocs } = require("./swagger");
-const cors = require("cors");
-
-// Enable CORS for all routes
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Block requests with no origin (like terminal curl)
-      if (!origin)
-        return callback(
-          new Error("No origin provided - not allowed by CORS"),
-          false
-        );
-
-      // Check if origin is from frontend URL or mikepawel.com or its subdomains
-      const allowedOrigins = [process.env.FRONTEND_URL];
-      const mikepawelRegex = /^https:\/\/([\w-]+\.)*mikepawel\.com$/;
-
-      if (allowedOrigins.includes(origin) || mikepawelRegex.test(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Origin not allowed by CORS"), false);
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  })
-);
 
 // MongoDB connection configuration
 const getMongoUri = () => {
