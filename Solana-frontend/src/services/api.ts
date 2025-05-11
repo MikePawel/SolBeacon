@@ -25,6 +25,10 @@ interface UserDetails {
   __v: number;
 }
 
+interface PasswordData {
+  password: string;
+}
+
 class ApiService {
   /**
    * Get all users
@@ -99,6 +103,28 @@ class ApiService {
       return response.data;
     } catch (error) {
       console.error("Error submitting transaction:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Set user password for device linking
+   */
+  async setUserPassword(walletAddress: string, password: string) {
+    try {
+      const response = await axios.post(
+        `${API_URL}/users/${walletAddress}/password`,
+        { password },
+        {
+          headers: {
+            accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error setting user password:", error);
       throw error;
     }
   }
