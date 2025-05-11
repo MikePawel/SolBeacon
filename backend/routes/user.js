@@ -242,6 +242,8 @@ router.post("/", async (req, res) => {
  *   post:
  *     summary: Set a password for a user
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: walletAddress
@@ -272,10 +274,21 @@ router.post("/", async (req, res) => {
  *         description: User not found
  *       400:
  *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - No token provided
  */
 // Set password for a user
-router.post("/:walletAddress/password", async (req, res) => {
+router.post("/:walletAddress/password", verifyToken, async (req, res) => {
   try {
+    // Verify that the authenticated user is setting their own password
+    if (req.user.walletAddress !== req.params.walletAddress) {
+      return res
+        .status(403)
+        .json({ message: "You can only set password for your own account" });
+    }
+
     const user = await getUserByWalletAddress(req.params.walletAddress);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
