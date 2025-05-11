@@ -10,6 +10,11 @@ const cors = require("cors");
 app.use(
   cors({
     origin: function (origin, callback) {
+      // Allow requests from Swagger UI when accessed on the same domain
+      if (origin && origin.includes("master-api.mikepawel.com")) {
+        return callback(null, true);
+      }
+
       // Block requests with no origin (like terminal curl)
       if (!origin)
         return callback(
