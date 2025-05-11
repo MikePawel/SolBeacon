@@ -119,12 +119,12 @@ export default function Header() {
       // Create user in backend
       try {
         if (user?.name && user?.email && fullAddress) {
-          await apiService.createUser({
+          const response = await apiService.createUser({
             name: user.name,
             email: user.email,
             walletAddress: fullAddress,
           });
-          console.log("User successfully created in backend");
+          console.log(response);
         }
       } catch (error) {
         console.error("Error creating user in backend:", error);
