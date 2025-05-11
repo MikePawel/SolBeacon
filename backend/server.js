@@ -6,11 +6,24 @@ const mongoose = require("mongoose");
 const { swaggerUi, swaggerDocs } = require("./swagger");
 const cors = require("cors");
 
-// Enable CORS for specific origin
+// Enable CORS for all routes
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGIN || "https://master-fe.mikepawel.com/ ",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+
+      // Check if origin is from frontend URL or mikepawel.com or its subdomains
+      const allowedOrigins = [process.env.FRONTEND_URL];
+      const mikepawelRegex = /^https:\/\/([\w-]+\.)*mikepawel\.com$/;
+
+      if (allowedOrigins.includes(origin) || mikepawelRegex.test(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
