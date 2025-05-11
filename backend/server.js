@@ -10,8 +10,12 @@ const cors = require("cors");
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps, curl, Postman)
-      if (!origin) return callback(null, true);
+      // Block requests with no origin (like terminal curl)
+      if (!origin)
+        return callback(
+          new Error("No origin provided - not allowed by CORS"),
+          false
+        );
 
       // Check if origin is from frontend URL or mikepawel.com or its subdomains
       const allowedOrigins = [process.env.FRONTEND_URL];
@@ -20,11 +24,12 @@ app.use(
       if (allowedOrigins.includes(origin) || mikepawelRegex.test(origin)) {
         callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        callback(new Error("Origin not allowed by CORS"), false);
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
 
