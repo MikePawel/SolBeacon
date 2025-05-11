@@ -165,13 +165,25 @@ router.delete("/:walletAddress", async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 token:
+ *                   type: string
+ *                   description: JWT token for authentication
  *       201:
  *         description: User created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 token:
+ *                   type: string
+ *                   description: JWT token for authentication
  *       400:
  *         description: Invalid input data
  */
@@ -182,7 +194,22 @@ router.post("/", async (req, res) => {
     if (user) {
       user.loggedInAt = new Date();
       await user.save();
-      return res.status(200).json(user);
+
+      // Generate JWT token for existing user
+      const token = jwt.sign(
+        {
+          userId: user._id,
+          email: user.email,
+          walletAddress: user.walletAddress,
+        },
+        JWT_SECRET
+      );
+
+      return res.status(200).json({
+        message: "Login successful",
+        user,
+        token,
+      });
     }
     user = new User({
       name: req.body.name,
@@ -191,7 +218,22 @@ router.post("/", async (req, res) => {
       loggedInAt: new Date(),
     });
     const newUser = await user.save();
-    res.status(201).json(newUser);
+
+    // Generate JWT token for new user
+    const token = jwt.sign(
+      {
+        userId: newUser._id,
+        email: newUser.email,
+        walletAddress: newUser.walletAddress,
+      },
+      JWT_SECRET
+    );
+
+    res.status(201).json({
+      message: "User created successfully",
+      user: newUser,
+      token,
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
