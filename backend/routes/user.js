@@ -269,10 +269,18 @@ router.post("/:walletAddress/password", async (req, res) => {
  *             type: object
  *             required:
  *               - deviceID
+ *               - email
+ *               - password
  *             properties:
  *               deviceID:
  *                 type: string
  *                 description: Device ID to set for the user
+ *               email:
+ *                 type: string
+ *                 description: Email for authentication
+ *               password:
+ *                 type: string
+ *                 description: Password for authentication
  *     responses:
  *       200:
  *         description: Device ID set successfully
@@ -280,17 +288,40 @@ router.post("/:walletAddress/password", async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Authentication failed
  *       404:
  *         description: User not found
  *       400:
  *         description: Invalid input data
  */
 // Set device ID for a user
-router.post("/:email/deviceID", async (req, res) => {
+router.post("/:walletAddress/deviceID", async (req, res) => {
   try {
     const user = await getUserByWalletAddress(req.params.walletAddress);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify email and password
+    if (!req.body.email || !req.body.password) {
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
+    }
+
+    // Check if email matches
+    if (user.email !== req.body.email) {
+      return res
+        .status(401)
+        .json({ message: "Authentication failed: Email does not match" });
+    }
+
+    // Check if password matches
+    if (!user.password || user.password !== req.body.password) {
+      return res
+        .status(401)
+        .json({ message: "Authentication failed: Password incorrect" });
     }
 
     if (!req.body.deviceID) {
