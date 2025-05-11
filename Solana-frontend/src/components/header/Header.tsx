@@ -142,6 +142,8 @@ export default function Header() {
     setIsConnected(false);
     setWalletAddress("");
     setIsDropdownOpen(false);
+    // Clear JWT token on logout
+    apiService.clearToken();
     navigate("/");
     window.location.reload();
   };

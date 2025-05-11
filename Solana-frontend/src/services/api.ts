@@ -30,6 +30,11 @@ interface PasswordData {
 }
 
 class ApiService {
+  private getAuthHeader() {
+    const token = localStorage.getItem("jwt_token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   /**
    * Get all users
    */
@@ -38,6 +43,7 @@ class ApiService {
       const response = await axios.get(`${API_URL}/users`, {
         headers: {
           accept: "application/json",
+          ...this.getAuthHeader(),
         },
       });
       return response.data;
@@ -55,6 +61,7 @@ class ApiService {
       const response = await axios.get(`${API_URL}/users/${walletAddress}`, {
         headers: {
           accept: "application/json",
+          ...this.getAuthHeader(),
         },
       });
       return response.data;
@@ -78,6 +85,12 @@ class ApiService {
           "Content-Type": "application/json",
         },
       });
+
+      // Store the JWT token if it's returned
+      if (response.data.token) {
+        localStorage.setItem("jwt_token", response.data.token);
+      }
+
       return response.data;
     } catch (error) {
       console.error("Error creating user:", error);
@@ -97,6 +110,7 @@ class ApiService {
           headers: {
             accept: "application/json",
             "Content-Type": "application/json",
+            ...this.getAuthHeader(),
           },
         }
       );
@@ -119,6 +133,7 @@ class ApiService {
           headers: {
             accept: "application/json",
             "Content-Type": "application/json",
+            ...this.getAuthHeader(),
           },
         }
       );
@@ -127,6 +142,13 @@ class ApiService {
       console.error("Error setting user password:", error);
       throw error;
     }
+  }
+
+  /**
+   * Clear JWT token on logout
+   */
+  clearToken() {
+    localStorage.removeItem("jwt_token");
   }
 }
 

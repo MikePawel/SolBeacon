@@ -273,6 +273,22 @@ export default function Wallet() {
           setWalletBalance(balance);
           setSolBalance(lamportsToSol(balance));
 
+          // Get user info and create/update user in backend
+          const user = await web3auth.getUserInfo();
+          if (user?.name && user?.email && address[0]) {
+            try {
+              const response = await apiService.createUser({
+                name: user.name,
+                email: user.email,
+                walletAddress: address[0],
+              });
+              // JWT token will be automatically stored by the API service
+              console.log("User authenticated:", response);
+            } catch (error) {
+              console.error("Error creating/updating user:", error);
+            }
+          }
+
           // Fetch disposable balance
           await fetchDisposableBalance();
         } catch (error) {
@@ -302,6 +318,8 @@ export default function Wallet() {
     setWalletBalance("");
     setSolBalance("0");
     setChainInfo(null);
+    // Clear JWT token on logout
+    apiService.clearToken();
   };
 
   const getUserInfo = async () => {
