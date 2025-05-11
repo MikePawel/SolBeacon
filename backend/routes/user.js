@@ -1,6 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/users");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+
+// Secret key for JWT signing - ideally from environment variables
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
+
 module.exports = router;
 
 /**
@@ -317,6 +323,152 @@ router.post("/deviceID", async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
+});
+
+/**
+ * @swagger
+ * /users/login:
+ *   post:
+ *     summary: Authenticate a user and return a JWT token
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: Email of the user
+ *               password:
+ *                 type: string
+ *                 description: Password of the user
+ *     responses:
+ *       200:
+ *         description: Authentication successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT token for authentication
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Authentication failed
+ *       404:
+ *         description: User not found
+ */
+router.post("/login", async (req, res) => {
+  try {
+    // Validate request body
+    if (!req.body.email || !req.body.password) {
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify password
+    if (!user.password || user.password !== req.body.password) {
+      return res
+        .status(401)
+        .json({ message: "Authentication failed: Invalid credentials" });
+    }
+
+    // Update last login time
+    user.loggedInAt = new Date();
+    await user.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        walletAddress: user.walletAddress,
+      },
+      JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    // Return token and user information
+    res.status(200).json({
+      message: "Authentication successful",
+      token,
+      user: {
+        name: user.name,
+        email: user.email,
+        walletAddress: user.walletAddress,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * Middleware to verify JWT token
+ */
+function verifyToken(req, res, next) {
+  // Get auth header
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(403).json({ message: "No token provided" });
+  }
+
+  // Extract token (Bearer format: "Bearer TOKEN")
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(403).json({ message: "Invalid token format" });
+  }
+
+  // Verify token
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+
+    // Add decoded user info to request
+    req.user = decoded;
+    next();
+  });
+}
+
+/**
+ * @swagger
+ * /users/protected:
+ *   get:
+ *     summary: Example of a protected route requiring JWT authentication
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Protected data retrieved successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - No token provided
+ */
+router.get("/protected", verifyToken, async (req, res) => {
+  // User data is available in req.user
+  res.status(200).json({
+    message: "You accessed protected data",
+    user: req.user,
+  });
 });
 
 async function getUserByWalletAddress(walletAddress) {
