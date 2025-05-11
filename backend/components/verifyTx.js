@@ -86,24 +86,4 @@ async function verifyTransaction(txHash) {
   }
 }
 
-// Example usage when run directly
-if (require.main === module) {
-  const txHash = process.argv[2];
-
-  if (!txHash) {
-    console.error("Please provide a transaction hash/signature");
-    process.exit(1);
-  }
-
-  verifyTransaction(txHash)
-    .then((result) => {
-      console.log("Transaction details:");
-      console.log(JSON.stringify(result, null, 2));
-    })
-    .catch((error) => {
-      console.error("Verification failed:", error.message);
-      process.exit(1);
-    });
-}
-
 module.exports = { verifyTransaction };

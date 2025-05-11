@@ -74,6 +74,9 @@ export default function Wallet() {
   const [topupAmount, setTopupAmount] = useState<string>("0.1");
   const [topupError, setTopupError] = useState<string>("");
 
+  // Add state to track private key visibility
+  const [showingPrivateKey, setShowingPrivateKey] = useState<boolean>(false);
+
   // Fetch user's disposable balance from API
   const fetchDisposableBalance = async () => {
     if (!walletAddress) return;
@@ -398,9 +401,18 @@ export default function Wallet() {
       uiConsole("provider not initialized yet");
       return;
     }
-    const rpc = new RPC(provider);
-    const privateKey = await rpc.getPrivateKey();
-    uiConsole(privateKey);
+
+    if (showingPrivateKey) {
+      // If already showing private key, clear console and update button state
+      setConsoleOutput("Private key hidden");
+      setShowingPrivateKey(false);
+    } else {
+      // Get and display private key
+      const rpc = new RPC(provider);
+      const privateKey = await rpc.getPrivateKey();
+      uiConsole(privateKey);
+      setShowingPrivateKey(true);
+    }
   };
 
   const getChainInfo = async () => {
@@ -723,7 +735,12 @@ export default function Wallet() {
         <h2>Wallet Actions</h2>
 
         <section className="topup-section">
-          <h3 className="topup-title">Topup Balance</h3>
+          <h3 className="topup-title">
+            Topup Balance
+            <span className="current-balance-indicator">
+              Available: {parseFloat(solBalance).toFixed(4)} SOL
+            </span>
+          </h3>
           <div className="topup-container">
             <div className="topup-input-wrapper">
               <input
@@ -784,7 +801,7 @@ export default function Wallet() {
       </div>
 
       <button onClick={getPrivateKey} className="get-key-button">
-        Get Private Key
+        {showingPrivateKey ? "Hide Private Key" : "Get Private Key"}
       </button>
     </div>
   );

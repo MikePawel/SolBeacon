@@ -1,7 +1,8 @@
 .container {
-  width: 60%;
+  width: 90%;
   margin: auto;
-  padding: 0 2rem;
+  padding: 0 1rem;
+  max-width: 1200px;
 }
 
 .main {
@@ -76,7 +77,23 @@
 
 @media (max-width: 1200px) {
   .container {
-    width: 90%;
+    width: 95%;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    width: 100%;
+    padding: 0 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+    margin: 30px 0;
+  }
+
+  .main {
+    padding: 2rem 0;
   }
 }
 

@@ -220,3 +220,65 @@
     transform: translateY(0);
   }
 }
+
+/* Mobile responsive styles */
+@media screen and (max-width: 768px) {
+  .header {
+    padding: 1rem 1.2rem;
+  }
+
+  .logo {
+    font-size: 1.3rem;
+  }
+
+  .wallet-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .wallet-address-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .wallet-dropdown {
+    width: 250px;
+    right: -10px;
+  }
+
+  .user-name {
+    font-size: 15px;
+  }
+
+  .user-email {
+    font-size: 12px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .header {
+    padding: 0.8rem 1rem;
+  }
+
+  .logo {
+    font-size: 1.2rem;
+  }
+
+  .wallet-button::before {
+    display: none;
+  }
+
+  .wallet-button {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .wallet-address-button {
+    max-width: 180px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
