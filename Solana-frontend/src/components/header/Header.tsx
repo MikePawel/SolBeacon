@@ -112,9 +112,9 @@ export default function Header() {
       const user = await getUserInfo(web3auth);
 
       // Print user info only on wallet connection using the direct response
-      console.log("User Name:", user?.name);
-      console.log("User Email:", user?.email);
-      console.log("User Wallet Address:", fullAddress);
+      // console.log("User Name:", user?.name);
+      // console.log("User Email:", user?.email);
+      // console.log("User Wallet Address:", fullAddress);
 
       // Create user in backend
       try {
@@ -124,7 +124,7 @@ export default function Header() {
             email: user.email,
             walletAddress: fullAddress,
           });
-          console.log(response);
+          // console.log(response); => logs the jwt token
         }
       } catch (error) {
         console.error("Error creating user in backend:", error);
