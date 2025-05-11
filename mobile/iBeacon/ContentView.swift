@@ -85,7 +85,10 @@ struct ContentView: View {
                 VStack(spacing: 25) {
                     // Status card
                     VStack(spacing: 15) {
+
+                        
                         HStack {
+                            
                             Image(systemName: beaconDetector.isBeaconDetected ? "location.fill" : "location.slash")
                                 .font(.system(size: 36))
                                 .foregroundColor(beaconDetector.isBeaconDetected ? .blue : .gray)
@@ -129,6 +132,74 @@ struct ContentView: View {
                             .padding(.bottom, 10)
                         }
                     }
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
+                    )
+                    .padding(.horizontal)
+
+                     // Login Form
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("Link Device")
+                            .font(.headline)
+                            .padding(.top, 5)
+                        
+                        Divider()
+                        
+                        if isLoggedIn {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.system(size: 20))
+                                
+                                Text("Device Linked")
+                                    .font(.subheadline)
+                                    .foregroundColor(.primary)
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    logout()
+                                }) {
+                                    Text("Unlink Device")
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color.red)
+                                        .cornerRadius(8)
+                                }
+                            }
+                            .padding(.vertical, 8)
+                        } else {
+                            TextField("Email", text: $email)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .autocapitalization(.none)
+                                .keyboardType(.emailAddress)
+                            
+                            SecureField("Password", text: $password)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                            
+                            Button(action: {
+                                login()
+                            }) {
+                                Text("Link Device")
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.blue)
+                                    .cornerRadius(8)
+                            }
+                        }
+                        
+                        if let loginResponse = loginResponse {
+                            Text(loginResponse)
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                    }
+                    .padding()
                     .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
@@ -216,85 +287,28 @@ struct ContentView: View {
                     }
                     
                     // Beacon info card
-                    VStack(alignment: .leading, spacing: 15) {
-                        Text("Beacon Information")
-                            .font(.headline)
-                            .padding(.top, 5)
+                    // VStack(alignment: .leading, spacing: 15) {
+                    //     Text("Beacon Information")
+                    //         .font(.headline)
+                    //         .padding(.top, 5)
                         
-                        Divider()
+                    //     Divider()
                         
-                        InfoRow(label: "UUID", value: beaconDetector.beaconRegion.uuid.uuidString)
-                        InfoRow(label: "Major", value: "\(beaconDetector.beaconRegion.major?.intValue ?? 0)")
-                        InfoRow(label: "Minor", value: "\(beaconDetector.beaconRegion.minor?.intValue ?? 0)")
-                        InfoRow(label: "Location Auth", value: beaconDetector.authorizationStatus)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
-                    )
-                    .padding(.horizontal)
+                    //     InfoRow(label: "UUID", value: beaconDetector.beaconRegion.uuid.uuidString)
+                    //     InfoRow(label: "Major", value: "\(beaconDetector.beaconRegion.major?.intValue ?? 0)")
+                    //     InfoRow(label: "Minor", value: "\(beaconDetector.beaconRegion.minor?.intValue ?? 0)")
+                    //     InfoRow(label: "Location Auth", value: beaconDetector.authorizationStatus)
+                    // }
+                    // .padding()
+                    // .frame(maxWidth: .infinity)
+                    // .background(
+                    //     RoundedRectangle(cornerRadius: 16)
+                    //         .fill(Color(.systemBackground))
+                    //         .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
+                    // )
+                    // .padding(.horizontal)
 
-                    // Login Form
-                    VStack(alignment: .leading, spacing: 15) {
-                        Text("Login")
-                            .font(.headline)
-                            .padding(.top, 5)
-                        
-                        Divider()
-                        
-                        if isLoggedIn {
-                            Text("Logged in with token: \(KeychainManager.shared.getToken() ?? "No token found")")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Button(action: {
-                                logout()
-                            }) {
-                                Text("Logout")
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.red)
-                                    .cornerRadius(8)
-                            }
-                        } else {
-                            TextField("Email", text: $email)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .autocapitalization(.none)
-                                .keyboardType(.emailAddress)
-                            
-                            SecureField("Password", text: $password)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                            
-                            Button(action: {
-                                login()
-                            }) {
-                                Text("Login")
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.blue)
-                                    .cornerRadius(8)
-                            }
-                        }
-                        
-                        if let loginResponse = loginResponse {
-                            Text(loginResponse)
-                                .foregroundColor(.secondary)
-                                .font(.caption)
-                        }
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
-                    )
-                    .padding(.horizontal)
+                   
                     
                     // Auth warning if needed
                     if beaconDetector.authorizationStatus != "Authorized Always" {
