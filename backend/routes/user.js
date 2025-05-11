@@ -250,17 +250,10 @@ router.post("/:walletAddress/password", async (req, res) => {
 
 /**
  * @swagger
- * /users/{walletAddress}/deviceID:
+ * /users/deviceID:
  *   post:
  *     summary: Set a device ID for a user
  *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: walletAddress
- *         schema:
- *           type: string
- *         required: true
- *         description: Wallet address of the user
  *     requestBody:
  *       required: true
  *       content:
@@ -295,26 +288,20 @@ router.post("/:walletAddress/password", async (req, res) => {
  *       400:
  *         description: Invalid input data
  */
-// Set device ID for a user
-router.post("/:walletAddress/deviceID", async (req, res) => {
+// Set device ID for a user using email
+router.post("/deviceID", async (req, res) => {
   try {
-    const user = await getUserByWalletAddress(req.params.walletAddress);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Verify email and password
-    if (!req.body.email || !req.body.password) {
+    // Verify required fields
+    if (!req.body.email || !req.body.password || !req.body.deviceID) {
       return res
         .status(400)
-        .json({ message: "Email and password are required" });
+        .json({ message: "Email, password, and deviceID are required" });
     }
 
-    // Check if email matches
-    if (user.email !== req.body.email) {
-      return res
-        .status(401)
-        .json({ message: "Authentication failed: Email does not match" });
+    // Find user by email
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Check if password matches
@@ -322,10 +309,6 @@ router.post("/:walletAddress/deviceID", async (req, res) => {
       return res
         .status(401)
         .json({ message: "Authentication failed: Password incorrect" });
-    }
-
-    if (!req.body.deviceID) {
-      return res.status(400).json({ message: "Device ID is required" });
     }
 
     user.deviceID = req.body.deviceID;
