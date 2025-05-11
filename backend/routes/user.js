@@ -32,9 +32,6 @@ module.exports = router;
  *         password:
  *           type: string
  *           description: Password of the user (not required initially)
- *         deviceID:
- *           type: string
- *           description: Device ID of the user (not required initially)
  *         balanceTransferred:
  *           type: number
  *           description: Amount of balance transferred by the user
@@ -289,77 +286,6 @@ router.post("/:walletAddress/password", async (req, res) => {
     }
 
     user.password = req.body.password;
-    await user.save();
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
-
-/**
- * @swagger
- * /users/deviceID:
- *   post:
- *     summary: Set a device ID for a user
- *     tags: [Users]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - deviceID
- *               - email
- *               - password
- *             properties:
- *               deviceID:
- *                 type: string
- *                 description: Device ID to set for the user
- *               email:
- *                 type: string
- *                 description: Email for authentication
- *               password:
- *                 type: string
- *                 description: Password for authentication
- *     responses:
- *       200:
- *         description: Device ID set successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       401:
- *         description: Authentication failed
- *       404:
- *         description: User not found
- *       400:
- *         description: Invalid input data
- */
-// Set device ID for a user using email
-router.post("/deviceID", async (req, res) => {
-  try {
-    // Verify required fields
-    if (!req.body.email || !req.body.password || !req.body.deviceID) {
-      return res
-        .status(400)
-        .json({ message: "Email, password, and deviceID are required" });
-    }
-
-    // Find user by email
-    const user = await User.findOne({ email: req.body.email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Check if password matches
-    if (!user.password || user.password !== req.body.password) {
-      return res
-        .status(401)
-        .json({ message: "Authentication failed: Password incorrect" });
-    }
-
-    user.deviceID = req.body.deviceID;
     await user.save();
     res.status(200).json(user);
   } catch (error) {
