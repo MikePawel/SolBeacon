@@ -286,7 +286,7 @@ router.post("/:walletAddress/password", async (req, res) => {
  *         description: Invalid input data
  */
 // Set device ID for a user
-router.post("/:walletAddress/deviceID", async (req, res) => {
+router.post("/:email/deviceID", async (req, res) => {
   try {
     const user = await getUserByWalletAddress(req.params.walletAddress);
     if (!user) {
