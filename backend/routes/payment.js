@@ -2,6 +2,11 @@ const express = require("express");
 const router = express.Router();
 const { sendSol } = require("../components/payer");
 const { verifyTransaction } = require("../components/verifyTx");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+
+// Secret key for JWT signing - ideally from environment variables
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 
 /**
  * @swagger
@@ -56,6 +61,8 @@ const { verifyTransaction } = require("../components/verifyTx");
  *   get:
  *     summary: Send 0.1 SOL to the fixed wallet (GETgWrW67ADQtc1Udv4xK3ykwtJDyVw7gzJXEDLvDSZi)
  *     tags: [Payment]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Payment sent successfully
@@ -63,6 +70,10 @@ const { verifyTransaction } = require("../components/verifyTx");
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/PaymentResponse'
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - No token provided
  *       500:
  *         description: Error sending payment
  *         content:
@@ -74,7 +85,7 @@ const { verifyTransaction } = require("../components/verifyTx");
  *                   type: string
  *                   description: Error message
  */
-router.get("/", async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   try {
     // Only initialize Solana connection when endpoint is called
     console.log("GET /payment - Processing payment request");
@@ -104,6 +115,8 @@ router.get("/", async (req, res) => {
  *   get:
  *     summary: Verify a Solana transaction and get sender, recipient, and amount
  *     tags: [Payment]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: txHash
@@ -118,6 +131,10 @@ router.get("/", async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/TransactionVerification'
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - No token provided
  *       404:
  *         description: Transaction not found
  *         content:
@@ -145,7 +162,7 @@ router.get("/", async (req, res) => {
  *                   type: string
  *                   description: Error message
  */
-router.get("/verify/:txHash", async (req, res) => {
+router.get("/verify/:txHash", verifyToken, async (req, res) => {
   try {
     const { txHash } = req.params;
 
@@ -181,5 +198,35 @@ router.get("/verify/:txHash", async (req, res) => {
     });
   }
 });
+
+/**
+ * Middleware to verify JWT token
+ */
+function verifyToken(req, res, next) {
+  // Get auth header
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(403).json({ message: "No token provided" });
+  }
+
+  // Extract token (Bearer format: "Bearer TOKEN")
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(403).json({ message: "Invalid token format" });
+  }
+
+  // Verify token
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+
+    // Add decoded user info to request
+    req.user = decoded;
+    next();
+  });
+}
 
 module.exports = router;

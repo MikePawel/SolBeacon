@@ -55,8 +55,6 @@ module.exports = router;
  *   get:
  *     summary: Returns all users
  *     tags: [Users]
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of all users
@@ -66,13 +64,9 @@ module.exports = router;
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/User'
- *       401:
- *         description: Unauthorized - Invalid or missing token
- *       403:
- *         description: Forbidden - No token provided
  */
-// Get all users
-router.get("/", verifyToken, async (req, res) => {
+// Get all users - No longer requires token
+router.get("/", async (req, res) => {
   try {
     const users = await User.find();
     res.status(200).json(users);
@@ -87,8 +81,6 @@ router.get("/", verifyToken, async (req, res) => {
  *   get:
  *     summary: Get a user by wallet address
  *     tags: [Users]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: walletAddress
@@ -103,15 +95,11 @@ router.get("/", verifyToken, async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
- *       401:
- *         description: Unauthorized - Invalid or missing token
- *       403:
- *         description: Forbidden - No token provided
  *       404:
  *         description: User not found
  */
-// Get a user by wallet address
-router.get("/:walletAddress", verifyToken, async (req, res) => {
+// Get a user by wallet address - No longer requires token
+router.get("/:walletAddress", async (req, res) => {
   const user = await getUserByWalletAddress(req.params.walletAddress);
   res.status(200).json(user);
 });
@@ -122,8 +110,6 @@ router.get("/:walletAddress", verifyToken, async (req, res) => {
  *   delete:
  *     summary: Delete a user by wallet address
  *     tags: [Users]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: walletAddress
@@ -134,15 +120,11 @@ router.get("/:walletAddress", verifyToken, async (req, res) => {
  *     responses:
  *       200:
  *         description: User deleted successfully
- *       401:
- *         description: Unauthorized - Invalid or missing token
- *       403:
- *         description: Forbidden - No token provided
  *       404:
  *         description: User not found
  */
-// delete a user by wallet address
-router.delete("/:walletAddress", verifyToken, async (req, res) => {
+// delete a user by wallet address - No longer requires token
+router.delete("/:walletAddress", async (req, res) => {
   const user = await getUserByWalletAddress(req.params.walletAddress);
   if (!user) {
     return res.status(404).json({ message: "User not found" });
@@ -435,36 +417,6 @@ router.post("/login", async (req, res) => {
 });
 
 /**
- * Middleware to verify JWT token
- */
-function verifyToken(req, res, next) {
-  // Get auth header
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader) {
-    return res.status(403).json({ message: "No token provided" });
-  }
-
-  // Extract token (Bearer format: "Bearer TOKEN")
-  const token = authHeader.split(" ")[1];
-
-  if (!token) {
-    return res.status(403).json({ message: "Invalid token format" });
-  }
-
-  // Verify token
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "Unauthorized: Invalid token" });
-    }
-
-    // Add decoded user info to request
-    req.user = decoded;
-    next();
-  });
-}
-
-/**
  * @swagger
  * /users/protected:
  *   get:
@@ -507,6 +459,36 @@ router.get("/protected", verifyToken, async (req, res) => {
     user: req.user,
   });
 });
+
+/**
+ * Middleware to verify JWT token
+ */
+function verifyToken(req, res, next) {
+  // Get auth header
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(403).json({ message: "No token provided" });
+  }
+
+  // Extract token (Bearer format: "Bearer TOKEN")
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(403).json({ message: "Invalid token format" });
+  }
+
+  // Verify token
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Unauthorized: Invalid token" });
+    }
+
+    // Add decoded user info to request
+    req.user = decoded;
+    next();
+  });
+}
 
 async function getUserByWalletAddress(walletAddress) {
   try {
