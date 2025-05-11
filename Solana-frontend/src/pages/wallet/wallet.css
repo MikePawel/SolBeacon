@@ -1052,7 +1052,7 @@
 
 /* Link Device Button */
 .link-device-button {
-  margin-left: 12px;
+  margin-left: auto;
   padding: 6px 12px;
   background-color: #4e44ce;
   color: white;
@@ -1081,6 +1081,8 @@
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
+  padding: 15px;
+  box-sizing: border-box;
 }
 
 .link-device-popup {
@@ -1098,12 +1100,15 @@
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid #eee;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .popup-header h3 {
   font-size: 18px;
   margin: 0;
   color: #333;
+  max-width: 90%;
 }
 
 .close-popup {
@@ -1119,20 +1124,27 @@
 
 .popup-content {
   padding: 20px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .popup-description {
   color: #555;
   margin-bottom: 20px;
   line-height: 1.5;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .password-inputs {
   margin-bottom: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .input-group {
   margin-bottom: 15px;
+  width: 100%;
 }
 
 .input-group label {
@@ -1150,6 +1162,7 @@
   border-radius: 4px;
   font-size: 14px;
   transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
 .input-group input:focus {
@@ -1241,4 +1254,21 @@
   .link-device-popup {
     width: 95%;
   }
+}
+
+.balance-display {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+#device-password,
+#password-confirm {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
