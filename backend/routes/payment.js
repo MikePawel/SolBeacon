@@ -3,6 +3,7 @@ const router = express.Router();
 const { sendSol } = require("../components/payer");
 const { verifyTransaction } = require("../components/verifyTx");
 const jwt = require("jsonwebtoken");
+const User = require("../models/users");
 require("dotenv").config();
 
 // Secret key for JWT signing - ideally from environment variables
@@ -59,7 +60,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
  * @swagger
  * /payment:
  *   get:
- *     summary: Send 0.1 SOL to the fixed wallet (GETgWrW67ADQtc1Udv4xK3ykwtJDyVw7gzJXEDLvDSZi)
+ *     summary: Send 0.1 SOL to the fixed wallet if user has sufficient balance
  *     tags: [Payment]
  *     security:
  *       - bearerAuth: []
@@ -70,10 +71,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/PaymentResponse'
+ *       400:
+ *         description: Insufficient balance
  *       401:
  *         description: Unauthorized - Invalid or missing token
  *       403:
  *         description: Forbidden - No token provided
+ *       404:
+ *         description: User not found
  *       500:
  *         description: Error sending payment
  *         content:
@@ -87,11 +92,34 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
  */
 router.get("/", verifyToken, async (req, res) => {
   try {
-    // Only initialize Solana connection when endpoint is called
+    // Get user from database using the JWT token information
+    const user = await User.findOne({ _id: req.user.userId });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    // Check if user has sufficient balance (at least 0.1)
+    if (user.balanceTransferred < 0.1) {
+      return res.status(400).json({
+        success: false,
+        error: "Insufficient balance",
+        currentBalance: user.balanceTransferred,
+        requiredBalance: 0.1,
+      });
+    }
+
     console.log("GET /payment - Processing payment request");
 
     // Send SOL to the fixed recipient
     const signature = await sendSol();
+
+    // Update user's balance by subtracting 0.1
+    user.balanceTransferred -= 0.1;
+    await user.save();
 
     // Return success response
     res.status(200).json({
@@ -99,6 +127,7 @@ router.get("/", verifyToken, async (req, res) => {
       signature,
       recipientAddress: "GETgWrW67ADQtc1Udv4xK3ykwtJDyVw7gzJXEDLvDSZi",
       amount: 0.1,
+      remainingBalance: user.balanceTransferred,
     });
   } catch (error) {
     console.error("Payment error:", error);
