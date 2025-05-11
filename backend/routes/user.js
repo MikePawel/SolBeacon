@@ -23,6 +23,12 @@ module.exports = router;
  *         walletAddress:
  *           type: string
  *           description: Wallet address of the user
+ *         password:
+ *           type: string
+ *           description: Password of the user (not required initially)
+ *         deviceID:
+ *           type: string
+ *           description: Device ID of the user (not required initially)
  *         balanceTransferred:
  *           type: number
  *           description: Amount of balance transferred by the user
@@ -180,6 +186,120 @@ router.post("/", async (req, res) => {
     });
     const newUser = await user.save();
     res.status(201).json(newUser);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /users/{walletAddress}/password:
+ *   post:
+ *     summary: Set a password for a user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: walletAddress
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Wallet address of the user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *             properties:
+ *               password:
+ *                 type: string
+ *                 description: Password to set for the user
+ *     responses:
+ *       200:
+ *         description: Password set successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ *       400:
+ *         description: Invalid input data
+ */
+// Set password for a user
+router.post("/:walletAddress/password", async (req, res) => {
+  try {
+    const user = await getUserByWalletAddress(req.params.walletAddress);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!req.body.password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    user.password = req.body.password;
+    await user.save();
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /users/{walletAddress}/deviceID:
+ *   post:
+ *     summary: Set a device ID for a user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: walletAddress
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Wallet address of the user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - deviceID
+ *             properties:
+ *               deviceID:
+ *                 type: string
+ *                 description: Device ID to set for the user
+ *     responses:
+ *       200:
+ *         description: Device ID set successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ *       400:
+ *         description: Invalid input data
+ */
+// Set device ID for a user
+router.post("/:walletAddress/deviceID", async (req, res) => {
+  try {
+    const user = await getUserByWalletAddress(req.params.walletAddress);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!req.body.deviceID) {
+      return res.status(400).json({ message: "Device ID is required" });
+    }
+
+    user.deviceID = req.body.deviceID;
+    await user.save();
+    res.status(200).json(user);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
