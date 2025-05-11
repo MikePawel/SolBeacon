@@ -416,8 +416,7 @@ router.post("/login", async (req, res) => {
         email: user.email,
         walletAddress: user.walletAddress,
       },
-      JWT_SECRET,
-      { expiresIn: "24h" }
+      JWT_SECRET
     );
 
     // Return token and user information
