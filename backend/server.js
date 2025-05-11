@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
+const cors = require("cors");
 const { swaggerUi, swaggerDocs } = require("./swagger");
 
 // MongoDB connection configuration
@@ -26,6 +27,19 @@ db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", function () {
   console.log("Connected to MongoDB");
 });
+
+// Enable CORS for all requests
+app.use(
+  cors({
+    origin: [
+      "https://master-fe.mikepawel.com",
+      "http://localhost:3000",
+      "https://master-api.mikepawel.com",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 app.use(express.json());
 
