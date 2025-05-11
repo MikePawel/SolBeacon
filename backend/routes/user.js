@@ -458,6 +458,26 @@ function verifyToken(req, res, next) {
  *     responses:
  *       200:
  *         description: Protected data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "You accessed protected data"
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     userId:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     email:
+ *                       type: string
+ *                       example: "user@example.com"
+ *                     walletAddress:
+ *                       type: string
+ *                       example: "0x1234567890abcdef"
  *       401:
  *         description: Unauthorized - Invalid or missing token
  *       403:
