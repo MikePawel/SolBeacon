@@ -2,7 +2,7 @@
 //  iBeaconApp.swift
 //  iBeacon
 //
-//  Created by dimitrov on 22.01.25.
+//  Created by MikePawel
 //
 
 import SwiftUI
