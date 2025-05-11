@@ -10,6 +10,63 @@ import CoreLocation
 import CoreBluetooth
 import UserNotifications
 import Foundation
+import Security
+
+// Add KeychainManager class
+class KeychainManager {
+    static let shared = KeychainManager()
+    private let service = "com.mikepawel.ibeacon"
+    private let account = "userToken"
+    
+    private init() {}
+    
+    func saveToken(_ token: String) -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecValueData as String: token.data(using: .utf8)!
+        ]
+        
+        // First try to delete any existing token
+        SecItemDelete(query as CFDictionary)
+        
+        // Add the new token
+        let status = SecItemAdd(query as CFDictionary, nil)
+        return status == errSecSuccess
+    }
+    
+    func getToken() -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true
+        ]
+        
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        
+        guard status == errSecSuccess,
+              let data = result as? Data,
+              let token = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        
+        return token
+    }
+    
+    func deleteToken() -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account
+        ]
+        
+        let status = SecItemDelete(query as CFDictionary)
+        return status == errSecSuccess
+    }
+}
 
 struct ContentView: View {
     @StateObject private var beaconDetector = BeaconDetector()
@@ -17,6 +74,10 @@ struct ContentView: View {
     @State private var showCopiedMessage = false
     @State private var showEditDeviceIDSheet = false
     @State private var customDeviceID = ""
+    @State private var email = ""
+    @State private var password = ""
+    @State private var loginResponse: String? = nil
+    @State private var isLoggedIn = false
     
     var body: some View {
         NavigationView {
@@ -175,67 +236,56 @@ struct ContentView: View {
                             .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
                     )
                     .padding(.horizontal)
-                    
-                    // Device ID card
+
+                    // Login Form
                     VStack(alignment: .leading, spacing: 15) {
-                        Text("Device Information")
+                        Text("Login")
                             .font(.headline)
                             .padding(.top, 5)
                         
                         Divider()
                         
-                        HStack {
-                            Text("Device ID")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .frame(width: 70, alignment: .leading)
-                            
-                            Text(beaconDetector.deviceIdentifier)
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Button(action: {
-                                UIPasteboard.general.string = beaconDetector.deviceIdentifier
-                                withAnimation {
-                                    showCopiedMessage = true
-                                }
-                                
-                                // Hide the message after 2 seconds
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                    withAnimation {
-                                        showCopiedMessage = false
-                                    }
-                                }
-                            }) {
-                                Image(systemName: "doc.on.doc")
-                                    .foregroundColor(.blue)
-                            }
-                            
-                            Button(action: {
-                                customDeviceID = beaconDetector.deviceIdentifier
-                                showEditDeviceIDSheet = true
-                            }) {
-                                Image(systemName: "pencil")
-                                    .foregroundColor(.blue)
-                                    .padding(.leading, 8)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                        
-                        if showCopiedMessage {
-                            Text("Device ID copied to clipboard!")
+                        if isLoggedIn {
+                            Text("Logged in with token: \(KeychainManager.shared.getToken() ?? "No token found")")
                                 .font(.caption)
-                                .foregroundColor(.green)
-                                .padding(.top, 2)
-                                .transition(.opacity)
+                                .foregroundColor(.secondary)
+                            
+                            Button(action: {
+                                logout()
+                            }) {
+                                Text("Logout")
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.red)
+                                    .cornerRadius(8)
+                            }
+                        } else {
+                            TextField("Email", text: $email)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .autocapitalization(.none)
+                                .keyboardType(.emailAddress)
+                            
+                            SecureField("Password", text: $password)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                            
+                            Button(action: {
+                                login()
+                            }) {
+                                Text("Login")
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.blue)
+                                    .cornerRadius(8)
+                            }
                         }
                         
-                        Text("This ID will be used for future deployment")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 2)
+                        if let loginResponse = loginResponse {
+                            Text(loginResponse)
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
                     }
                     .padding()
                     .frame(maxWidth: .infinity)
@@ -339,6 +389,10 @@ struct ContentView: View {
                 .padding()
             }
         }
+        .onAppear {
+            // Check if user is already logged in
+            isLoggedIn = KeychainManager.shared.getToken() != nil
+        }
     }
     
     private func getBarColor(for index: Int, proximity: String) -> Color {
@@ -383,6 +437,69 @@ struct ContentView: View {
             return .red
         } else {
             return .gray
+        }
+    }
+    
+    private func login() {
+        guard let url = URL(string: "https://master-api.mikepawel.com/users/login") else {
+            loginResponse = "Invalid URL"
+            return
+        }
+        
+        let loginData = ["email": email, "password": password]
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: loginData) else {
+            loginResponse = "Failed to create request data"
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "accept")
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.loginResponse = "Error: \(error.localizedDescription)"
+                    return
+                }
+                
+                guard let data = data else {
+                    self.loginResponse = "No data received"
+                    return
+                }
+                
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let token = json["token"] as? String {
+                        // Save token to Keychain
+                        if KeychainManager.shared.saveToken(token) {
+                            self.loginResponse = "Token saved successfully"
+                            self.isLoggedIn = true
+                            // Clear sensitive data
+                            self.email = ""
+                            self.password = ""
+                        } else {
+                            self.loginResponse = "Failed to save token"
+                        }
+                    } else {
+                        self.loginResponse = "No token found in response"
+                    }
+                } catch {
+                    self.loginResponse = "Failed to parse response: \(error.localizedDescription)"
+                }
+            }
+        }.resume()
+    }
+    
+    private func logout() {
+        if KeychainManager.shared.deleteToken() {
+            isLoggedIn = false
+            loginResponse = "Logged out successfully"
+        } else {
+            loginResponse = "Failed to logout"
         }
     }
 }
@@ -731,10 +848,17 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
                 
                 switch result {
                 case .success(let response):
-                    responseMessage = response.message ?? "Payment request successful"
-                    statusUpdate = "Transaction Complete"
-                    notificationTitle = "Transaction Complete"
-                    notificationMessage = "Payment API: \(responseMessage)"
+                    if response.status == "error" || response.error != nil {
+                        responseMessage = "Error: \(response.error ?? response.message ?? "Unknown error")"
+                        statusUpdate = "Transaction Failed"
+                        notificationTitle = "Transaction Failed"
+                        notificationMessage = "Payment API Error: \(responseMessage)"
+                    } else {
+                        responseMessage = response.message ?? "Payment request successful"
+                        statusUpdate = "Transaction Complete"
+                        notificationTitle = "Transaction Complete"
+                        notificationMessage = "Payment API: \(responseMessage)"
+                    }
                     
                 case .failure(let error):
                     responseMessage = "Error: \(error.localizedDescription)"
@@ -819,6 +943,7 @@ fileprivate class InternalPaymentService {
     struct Response: Codable {
         var status: String?
         var message: String?
+        var error: String?
     }
     
     func requestPayment(completion: @escaping (Result<Response, Error>) -> Void) {
@@ -829,14 +954,29 @@ fileprivate class InternalPaymentService {
             return
         }
         
+        // Get the stored JWT token
+        guard let token = KeychainManager.shared.getToken() else {
+            completion(.failure(NSError(domain: "PaymentService", code: 401, userInfo: [NSLocalizedDescriptionKey: "No authentication token found"])))
+            return
+        }
+        
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "accept")
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 completion(.failure(error))
                 return
+            }
+            
+            // Check for HTTP status code
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode == 401 {
+                    completion(.failure(NSError(domain: "PaymentService", code: 401, userInfo: [NSLocalizedDescriptionKey: "Authentication failed - token may be invalid or expired"])))
+                    return
+                }
             }
             
             guard let data = data else {
@@ -851,7 +991,7 @@ fileprivate class InternalPaymentService {
             } catch {
                 // If we can't decode to our struct, return the raw data as string
                 if let rawResponse = String(data: data, encoding: .utf8) {
-                    let mockResponse = Response(status: "success", message: rawResponse)
+                    let mockResponse = Response(status: "error", message: "Failed to decode response", error: rawResponse)
                     completion(.success(mockResponse))
                 } else {
                     completion(.failure(error))
