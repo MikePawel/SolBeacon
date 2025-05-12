@@ -32,7 +32,7 @@ db.once("open", function () {
 app.use(
   cors({
     origin: [
-      "https://master-fe.mikepawel.com",
+      "https://solbeacon.mikepawel.com",
       "http://localhost:3000",
       "https://master-api.mikepawel.com",
     ],
