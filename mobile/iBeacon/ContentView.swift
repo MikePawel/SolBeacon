@@ -78,6 +78,8 @@ struct ContentView: View {
     @State private var password = ""
     @State private var loginResponse: String? = nil
     @State private var isLoggedIn = false
+    @State private var showTransactionConfirmation = false
+    @State private var showSuccessAnimation = false
     
     var body: some View {
         NavigationView {
@@ -94,7 +96,7 @@ struct ContentView: View {
                                 .foregroundColor(beaconDetector.isBeaconDetected ? .blue : .gray)
                             
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(beaconDetector.isBeaconDetected ? "Beacon Detected" : "Searching...")
+                                Text(beaconDetector.isBeaconDetected ? "Beacon Detected" : "No Beacon Detected")
                                     .font(.headline)
                                     .foregroundColor(beaconDetector.isBeaconDetected ? .primary : .secondary)
                                 
@@ -141,38 +143,14 @@ struct ContentView: View {
                     .padding(.horizontal)
 
                      // Login Form
-                    VStack(alignment: .leading, spacing: 15) {
-                        Text("Link Device")
-                            .font(.headline)
-                            .padding(.top, 5)
-                        
-                        Divider()
-                        
-                        if isLoggedIn {
-                            HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                                    .font(.system(size: 20))
-                                
-                                Text("Device Linked")
-                                    .font(.subheadline)
-                                    .foregroundColor(.primary)
-                                
-                                Spacer()
-                                
-                                Button(action: {
-                                    logout()
-                                }) {
-                                    Text("Unlink Device")
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(Color.red)
-                                        .cornerRadius(8)
-                                }
-                            }
-                            .padding(.vertical, 8)
-                        } else {
+                    if !isLoggedIn {
+                        VStack(alignment: .leading, spacing: 15) {
+                            Text("Link Device")
+                                .font(.headline)
+                                .padding(.top, 5)
+                            
+                            Divider()
+                            
                             TextField("Email", text: $email)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .autocapitalization(.none)
@@ -191,90 +169,12 @@ struct ContentView: View {
                                     .background(Color.blue)
                                     .cornerRadius(8)
                             }
-                        }
-                        
-                        if let loginResponse = loginResponse {
-                            Text(loginResponse)
-                                .foregroundColor(.secondary)
-                                .font(.caption)
-                        }
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
-                    )
-                    .padding(.horizontal)
-                    
-                    // Transaction Status Card
-                    VStack(alignment: .leading, spacing: 15) {
-                        HStack {
-                            Image(systemName: "arrow.clockwise.circle.fill")
-                                .font(.system(size: 22))
-                                .foregroundColor(.blue)
                             
-                            Text("Transaction Status")
-                                .font(.headline)
-                                .padding(.top, 5)
-                            
-                            Spacer()
-                        }
-                        
-                        Divider()
-                        
-                        if beaconDetector.transactionStatus != nil {
-                            ForEach(beaconDetector.transactionStatus ?? [], id: \.self) { status in
-                                HStack(spacing: 12) {
-                                    Image(systemName: getStatusIcon(for: status))
-                                        .foregroundColor(getStatusColor(for: status))
-                                    
-                                    Text(status)
-                                        .font(.subheadline)
-                                        .foregroundColor(.primary)
-                                    
-                                    Spacer()
-                                }
-                                .padding(.vertical, 4)
+                            if let loginResponse = loginResponse {
+                                Text(loginResponse)
+                                    .foregroundColor(.secondary)
+                                    .font(.caption)
                             }
-                        } else {
-                            Text("No transactions in progress")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .padding(.vertical, 5)
-                        }
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
-                    )
-                    .padding(.horizontal)
-                    
-                    // Payment API Response Card
-                    if beaconDetector.lastPaymentResponse != nil {
-                        VStack(alignment: .leading, spacing: 15) {
-                            HStack {
-                                Image(systemName: "creditcard.fill")
-                                    .font(.system(size: 22))
-                                    .foregroundColor(.blue)
-                                
-                                Text("Payment API Response")
-                                    .font(.headline)
-                                    .padding(.top, 5)
-                                
-                                Spacer()
-                            }
-                            
-                            Divider()
-                            
-                            Text(beaconDetector.lastPaymentResponse ?? "")
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                                .padding(.vertical, 5)
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
@@ -285,6 +185,213 @@ struct ContentView: View {
                         )
                         .padding(.horizontal)
                     }
+                    
+                    // Enhanced Transaction Status Card
+                    VStack(alignment: .leading, spacing: 15) {
+                        HStack {
+                            Image(systemName: "creditcard.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.blue)
+                            
+                            Text("Transaction Status")
+                                .font(.headline)
+                                .padding(.top, 5)
+                            
+                            Spacer()
+                            
+                            if beaconDetector.processingTransaction {
+                                // Processing indicator
+                                HStack(spacing: 5) {
+                                    Circle()
+                                        .fill(Color.green)
+                                        .frame(width: 8, height: 8)
+                                        .opacity(0.6)
+                                    Circle()
+                                        .fill(Color.green)
+                                        .frame(width: 8, height: 8)
+                                        .opacity(0.8)
+                                    Circle()
+                                        .fill(Color.green)
+                                        .frame(width: 8, height: 8)
+                                        .opacity(1.0)
+                                }
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 3)
+                                .background(Color.green.opacity(0.1))
+                                .cornerRadius(10)
+                            } else if beaconDetector.pendingTransaction {
+                                // Pulsing notification indicator
+                                Circle()
+                                    .fill(Color.orange)
+                                    .frame(width: 12, height: 12)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.orange.opacity(0.5), lineWidth: 4)
+                                            .scaleEffect(1.3)
+                                    )
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        if beaconDetector.pendingTransaction {
+                            // Pending transaction card
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack(spacing: 15) {
+                                    Image(systemName: "bell.badge.fill")
+                                        .font(.system(size: 28))
+                                        .foregroundColor(.orange)
+                                    
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Text("Transaction Waiting")
+                                            .font(.headline)
+                                            .foregroundColor(.primary)
+                                        
+                                        Text("Beacon detected nearby")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                
+                                // Timeline component
+                                if let transactionStatus = beaconDetector.transactionStatus {
+                                    VStack(spacing: 0) {
+                                        ForEach(0..<transactionStatus.count, id: \.self) { index in
+                                            HStack(alignment: .top, spacing: 15) {
+                                                // Timeline node
+                                                VStack(spacing: 0) {
+                                                    Circle()
+                                                        .fill(getStatusColor(for: transactionStatus[index]))
+                                                        .frame(width: 12, height: 12)
+                                                    
+                                                    if index < transactionStatus.count - 1 {
+                                                        Rectangle()
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: 2)
+                                                            .frame(height: 30)
+                                                    }
+                                                }
+                                                
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(transactionStatus[index])
+                                                        .font(.subheadline)
+                                                        .foregroundColor(.primary)
+                                                    
+                                                    if index == 0 {
+                                                        Text("Beacon in \(beaconDetector.proximityString) range")
+                                                            .font(.caption)
+                                                            .foregroundColor(.secondary)
+                                                    }
+                                                }
+                                                
+                                                Spacer()
+                                            }
+                                        }
+                                    }
+                                    .padding(.leading, 4)
+                                    .padding(.top, 5)
+                                }
+                            }
+                            .padding()
+                            .background(Color(.systemGray6).opacity(0.5))
+                            .cornerRadius(12)
+                            .onAppear {
+                                showTransactionConfirmation = true
+                            }
+                        } else if beaconDetector.transactionStatus != nil && !beaconDetector.transactionStatus!.isEmpty {
+                            // Transaction history - processed transactions
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("Recent Activity")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .padding(.bottom, 5)
+                                
+                                // Timeline component
+                                VStack(spacing: 0) {
+                                    ForEach(0..<min(beaconDetector.transactionStatus!.count, 5), id: \.self) { index in
+                                        HStack(alignment: .top, spacing: 15) {
+                                            // Timeline node
+                                            VStack(spacing: 0) {
+                                                Circle()
+                                                    .fill(getStatusColor(for: beaconDetector.transactionStatus![index]))
+                                                    .frame(width: 10, height: 10)
+                                                
+                                                if index < min(beaconDetector.transactionStatus!.count, 5) - 1 {
+                                                    Rectangle()
+                                                        .fill(Color.gray.opacity(0.2))
+                                                        .frame(width: 2)
+                                                        .frame(height: 25)
+                                                }
+                                            }
+                                            
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(beaconDetector.transactionStatus![index])
+                                                    .font(.subheadline)
+                                                    .foregroundColor(.primary)
+                                                
+                                                if index == beaconDetector.transactionStatus!.count - 1 && 
+                                                   (beaconDetector.transactionStatus![index].contains("Complete") || 
+                                                    beaconDetector.transactionStatus![index].contains("Failed") ||
+                                                    beaconDetector.transactionStatus![index].contains("Cancelled")) {
+                                                    Text(beaconDetector.lastPaymentResponse ?? "")
+                                                        .font(.caption)
+                                                        .foregroundColor(.secondary)
+                                                        .lineLimit(2)
+                                                }
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            // Show an icon for the final status
+                                            if index == beaconDetector.transactionStatus!.count - 1 {
+                                                Image(systemName: getStatusFinalIcon(for: beaconDetector.transactionStatus![index]))
+                                                    .foregroundColor(getStatusColor(for: beaconDetector.transactionStatus![index]))
+                                            }
+                                        }
+                                        .padding(.vertical, 5)
+                                    }
+                                }
+                                .padding(.leading, 4)
+                            }
+                            .padding()
+                            .background(Color(.systemGray6).opacity(0.5))
+                            .cornerRadius(12)
+                        } else {
+                            // No transaction state
+                            HStack {
+                                Spacer()
+                                
+                                VStack(spacing: 10) {
+                                    Image(systemName: "creditcard.viewfinder")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.gray.opacity(0.7))
+                                    
+                                    Text("No Recent Transactions")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                    
+                                    Text("Transactions will appear here when a beacon is detected")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(.vertical, 25)
+                                
+                                Spacer()
+                            }
+                        }
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
+                    )
+                    .padding(.horizontal)
+                    
                     
                     // Beacon info card
                     // VStack(alignment: .leading, spacing: 15) {
@@ -402,11 +509,108 @@ struct ContentView: View {
                 }
                 .padding()
             }
+            .sheet(isPresented: $showTransactionConfirmation) {
+                TransactionConfirmationView(
+                    isPresented: $showTransactionConfirmation,
+                    beaconDetector: beaconDetector
+                )
+            }
         }
         .onAppear {
             // Check if user is already logged in
             isLoggedIn = KeychainManager.shared.getToken() != nil
+            
+            // Set up notification observer for transaction completion
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("TransactionCompleted"),
+                object: nil,
+                queue: .main
+            ) { notification in
+                if let userInfo = notification.userInfo,
+                   let success = userInfo["success"] as? Bool,
+                   success {
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                        self.showSuccessAnimation = true
+                    }
+                }
+            }
         }
+        .onDisappear {
+            // Remove notification observer
+            NotificationCenter.default.removeObserver(self)
+        }
+        .overlay(
+            Group {
+                if showSuccessAnimation {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .edgesIgnoringSafeArea(.all)
+                            .onTapGesture {
+                                withAnimation {
+                                    showSuccessAnimation = false
+                                }
+                            }
+                        
+                        VStack(spacing: 20) {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 80, height: 80)
+                                .overlay(
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 40, weight: .bold))
+                                        .foregroundColor(.white)
+                                )
+                                .scaleEffect(showSuccessAnimation ? 1.0 : 0.1)
+                                .opacity(showSuccessAnimation ? 1.0 : 0.0)
+                            
+                            Text("Transaction Complete")
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(.top, 10)
+                                .opacity(showSuccessAnimation ? 1.0 : 0.0)
+                                .scaleEffect(showSuccessAnimation ? 1.0 : 0.7)
+                            
+                            Text(beaconDetector.lastPaymentResponse ?? "Payment processed successfully")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.9))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                                .opacity(showSuccessAnimation ? 1.0 : 0.0)
+                                .offset(y: showSuccessAnimation ? 0 : 20)
+                            
+                            Button(action: {
+                                withAnimation {
+                                    showSuccessAnimation = false
+                                }
+                            }) {
+                                Text("Dismiss")
+                                    .fontWeight(.medium)
+                                    .padding(.horizontal, 30)
+                                    .padding(.vertical, 12)
+                                    .background(Color.white)
+                                    .foregroundColor(.green)
+                                    .cornerRadius(30)
+                            }
+                            .padding(.top, 20)
+                            .opacity(showSuccessAnimation ? 1.0 : 0.0)
+                            .offset(y: showSuccessAnimation ? 0 : 50)
+                        }
+                        .padding(40)
+                        .background(
+                            RoundedRectangle(cornerRadius: 25)
+                                .fill(Color.green.opacity(0.2))
+                                .background(
+                                    VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
+                                        .cornerRadius(25)
+                                )
+                        )
+                        .scaleEffect(showSuccessAnimation ? 1.0 : 0.7)
+                    }
+                    .transition(.opacity)
+                }
+            }
+        )
     }
     
     private func getBarColor(for index: Int, proximity: String) -> Color {
@@ -516,6 +720,30 @@ struct ContentView: View {
             loginResponse = "Failed to logout"
         }
     }
+    
+    private func getStatusFinalIcon(for status: String) -> String {
+        if status.contains("Complete") {
+            return "checkmark.seal.fill"
+        } else if status.contains("Failed") {
+            return "exclamationmark.triangle.fill"
+        } else if status.contains("Cancelled") {
+            return "xmark.circle.fill"
+        } else {
+            return "circle"
+        }
+    }
+    
+    // Add observer for transaction completion
+    private func observeTransactionCompletion() {
+        // Trigger success animation when transaction is completed successfully
+        if beaconDetector.transactionStatus?.last?.contains("Complete") == true {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                    showSuccessAnimation = true
+                }
+            }
+        }
+    }
 }
 
 struct InfoRow: View {
@@ -546,6 +774,8 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var deviceIdentifier = "Unknown"
     @Published var lastPaymentResponse: String? = nil
     @Published var transactionStatus: [String]? = nil
+    @Published var pendingTransaction = false
+    @Published var processingTransaction = false
     
     // Internal payment service
     private var paymentService: InternalPaymentService?
@@ -843,59 +1073,114 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     private func callPaymentAPIAndNotify() {
-        // Show initial detection notification
-        showNotification(title: "Beacon Detected", message: "Sending transaction now...")
+        // Instead of making the payment directly, set a pending transaction state
+        // and notify the user that action is required
+        pendingTransaction = true
         
         // Update UI transaction status
         DispatchQueue.main.async {
-            self.transactionStatus = ["Beacon Detected", "Sending transaction..."]
+            self.transactionStatus = ["Beacon Detected", "Waiting for confirmation..."]
         }
         
-        // Use the internal payment service instead
-        paymentService?.requestPayment { result in
-            // Process payment result on a background queue
-            DispatchQueue.global(qos: .userInitiated).async {
-                let statusUpdate: String
-                let responseMessage: String
-                let notificationTitle: String
-                let notificationMessage: String
-                
-                switch result {
-                case .success(let response):
-                    if response.status == "error" || response.error != nil {
-                        responseMessage = "Error: \(response.error ?? response.message ?? "Unknown error")"
-                        statusUpdate = "Transaction Failed"
-                        notificationTitle = "Transaction Failed"
-                        notificationMessage = "Payment API Error: \(responseMessage)"
-                    } else {
-                        responseMessage = response.message ?? "Payment request successful"
-                        statusUpdate = "Transaction Complete"
-                        notificationTitle = "Transaction Complete"
-                        notificationMessage = "Payment API: \(responseMessage)"
-                    }
-                    
-                case .failure(let error):
-                    responseMessage = "Error: \(error.localizedDescription)"
-                    statusUpdate = "Transaction Failed"
-                    notificationTitle = "Transaction Failed"
-                    notificationMessage = "Payment API Error: \(error.localizedDescription)"
+        // Show notification that requires user action
+        showNotification(
+            title: "Beacon Detected Nearby", 
+            message: "Open app to review and confirm transaction."
+        )
+    }
+    
+    // Modified method to handle user confirmation of transaction
+    func confirmAndProcessTransaction() {
+        // Set processing state to true to show visual indicator
+        DispatchQueue.main.async {
+            self.processingTransaction = true
+        }
+        
+        // Update UI transaction status
+        DispatchQueue.main.async {
+            if var currentStatus = self.transactionStatus {
+                // Replace "Waiting for confirmation" with "Processing transaction"
+                if currentStatus.count > 1 {
+                    currentStatus[1] = "Processing transaction..."
+                } else {
+                    currentStatus.append("Processing transaction...")
                 }
-                
-                // Update UI on main thread
-                DispatchQueue.main.async {
-                    self.lastPaymentResponse = responseMessage
-                    
-                    // Update transaction status list
-                    if var currentStatus = self.transactionStatus {
-                        currentStatus.append(statusUpdate)
-                        self.transactionStatus = currentStatus
-                    }
-                }
-                
-                // Show notification
-                self.showNotification(title: notificationTitle, message: notificationMessage)
+                self.transactionStatus = currentStatus
             }
         }
+        
+        // Add a slight delay to show the processing animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            // Use the internal payment service
+            self.paymentService?.requestPayment { result in
+                // Process payment result on a background queue
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let statusUpdate: String
+                    let responseMessage: String
+                    
+                    switch result {
+                    case .success(let response):
+                        if response.status == "error" || response.error != nil {
+                            responseMessage = "Error: \(response.error ?? response.message ?? "Unknown error")"
+                            statusUpdate = "Transaction Failed"
+                        } else {
+                            responseMessage = response.message ?? "Payment request successful"
+                            statusUpdate = "Transaction Complete"
+                        }
+                        
+                    case .failure(let error):
+                        responseMessage = "Error: \(error.localizedDescription)"
+                        statusUpdate = "Transaction Failed"
+                    }
+                    
+                    // Update UI on main thread
+                    DispatchQueue.main.async {
+                        self.lastPaymentResponse = responseMessage
+                        self.pendingTransaction = false
+                        self.processingTransaction = false
+                        
+                        // Update transaction status list
+                        if var currentStatus = self.transactionStatus {
+                            // Add the new status instead of replacing
+                            currentStatus.append(statusUpdate)
+                            self.transactionStatus = currentStatus
+                            
+                            // Notify ContentView to show success animation if transaction was successful
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("TransactionCompleted"),
+                                object: nil,
+                                userInfo: ["success": statusUpdate.contains("Complete")]
+                            )
+                        }
+                    }
+                    
+                    // Show notification with result
+                    self.showNotification(
+                        title: statusUpdate,
+                        message: responseMessage
+                    )
+                }
+            }
+        }
+    }
+    
+    // New method to handle user cancellation of transaction
+    func cancelTransaction() {
+        pendingTransaction = false
+        
+        // Update UI transaction status
+        DispatchQueue.main.async {
+            if var currentStatus = self.transactionStatus {
+                currentStatus.append("Transaction Cancelled")
+                self.transactionStatus = currentStatus
+            }
+        }
+        
+        // Show cancellation notification
+        showNotification(
+            title: "Transaction Cancelled",
+            message: "You've cancelled the payment transaction."
+        )
     }
     
     private func showNotification(title: String, message: String) {
@@ -1014,6 +1299,165 @@ fileprivate class InternalPaymentService {
         }
         
         task.resume()
+    }
+}
+
+// New transaction confirmation view with improved visuals
+struct TransactionConfirmationView: View {
+    @Binding var isPresented: Bool
+    var beaconDetector: BeaconDetector
+    @State private var isAnimating = false
+    
+    var body: some View {
+        VStack(spacing: 30) {
+            // Handle on top for sheet
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color(.systemGray4))
+                .frame(width: 40, height: 5)
+                .padding(.top, 8)
+            
+            // Header
+            VStack(spacing: 15) {
+                // Pulsing beacon icon
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.2))
+                        .frame(width: 100, height: 100)
+                        .scaleEffect(isAnimating ? 1.1 : 1.0)
+                    
+                    Circle()
+                        .fill(Color.blue.opacity(0.3))
+                        .frame(width: 80, height: 80)
+                        .scaleEffect(isAnimating ? 1.15 : 1.0)
+                    
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 60, height: 60)
+                    
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.white)
+                }
+                .onAppear {
+                    withAnimation(Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                        isAnimating = true
+                    }
+                }
+                
+                Text("Transaction Request")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Text("A beacon has been detected nearby")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.vertical)
+            
+            // Transaction details
+            VStack(alignment: .leading, spacing: 15) {
+                Text("Transaction Details")
+                    .font(.headline)
+                    .padding(.bottom, 5)
+                
+                HStack {
+                    Text("Location")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("Proximity: \(beaconDetector.proximityString)")
+                        .fontWeight(.medium)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+                
+                HStack {
+                    Text("Beacon ID")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(beaconDetector.beaconRegion.uuid.uuidString.prefix(8))...")
+                        .fontWeight(.medium)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+                
+                HStack {
+                    Text("Transaction Type")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("Payment Processing")
+                        .fontWeight(.medium)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+            }
+            .padding(.horizontal)
+            
+            // Action buttons
+            VStack(spacing: 15) {
+                Button(action: {
+                    // Hide the sheet first
+                    isPresented = false
+                    // Wait a bit then process the transaction
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        beaconDetector.confirmAndProcessTransaction()
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text("Confirm Transaction")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(15)
+                    .shadow(color: Color.blue.opacity(0.3), radius: 5, x: 0, y: 3)
+                }
+                
+                Button(action: {
+                    // Hide the sheet first
+                    isPresented = false
+                    // Wait a bit then cancel the transaction
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        beaconDetector.cancelTransaction()
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "xmark.circle.fill")
+                        Text("Decline")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .foregroundColor(.primary)
+                    .cornerRadius(15)
+                }
+            }
+            .padding(.horizontal)
+            
+            Spacer()
+        }
+        .padding()
+    }
+}
+
+// Helper blur effect view for improved visual appearance
+struct VisualEffectView: UIViewRepresentable {
+    var effect: UIVisualEffect?
+    
+    func makeUIView(context: UIViewRepresentableContext<Self>) -> UIVisualEffectView {
+        UIVisualEffectView()
+    }
+    
+    func updateUIView(_ uiView: UIVisualEffectView, context: UIViewRepresentableContext<Self>) {
+        uiView.effect = effect
     }
 }
 
