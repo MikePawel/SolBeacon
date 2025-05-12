@@ -50,6 +50,10 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 const userRouter = require("./routes/user");
 app.use("/users", userRouter);
 
+// Health check routes
+const healthRouter = require("./routes/health");
+app.use("/health", healthRouter);
+
 // Transaction routes
 const transactionRouter = require("./routes/transaction");
 app.use("/transactions", transactionRouter);
