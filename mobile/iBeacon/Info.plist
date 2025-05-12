@@ -8,11 +8,19 @@
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string></string>
 		<string>location</string>
 		<string>bluetooth-central</string>
 		<string>fetch</string>
 		<string>processing</string>
+		<string>remote-notification</string>
 	</array>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We need your location to detect nearby beacons and process transactions.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your location to detect nearby beacons and process transactions.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>We need Bluetooth to detect and communicate with nearby beacons.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>We need Bluetooth to detect and communicate with nearby beacons.</string>
 </dict>
 </plist>

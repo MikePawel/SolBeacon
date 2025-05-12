@@ -391,29 +391,7 @@ struct ContentView: View {
                             .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
                     )
                     .padding(.horizontal)
-                    
-                    
-                    // Beacon info card
-                    // VStack(alignment: .leading, spacing: 15) {
-                    //     Text("Beacon Information")
-                    //         .font(.headline)
-                    //         .padding(.top, 5)
-                        
-                    //     Divider()
-                        
-                    //     InfoRow(label: "UUID", value: beaconDetector.beaconRegion.uuid.uuidString)
-                    //     InfoRow(label: "Major", value: "\(beaconDetector.beaconRegion.major?.intValue ?? 0)")
-                    //     InfoRow(label: "Minor", value: "\(beaconDetector.beaconRegion.minor?.intValue ?? 0)")
-                    //     InfoRow(label: "Location Auth", value: beaconDetector.authorizationStatus)
-                    // }
-                    // .padding()
-                    // .frame(maxWidth: .infinity)
-                    // .background(
-                    //     RoundedRectangle(cornerRadius: 16)
-                    //         .fill(Color(.systemBackground))
-                    //         .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
-                    // )
-                    // .padding(.horizontal)
+                
 
                    
                     
@@ -838,13 +816,21 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     private func setupNotifications() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+        // Request all necessary notification permissions
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge, .provisional, .criticalAlert]) { granted, error in
             if granted {
                 print("Notification permission granted")
+                // Register for remote notifications
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
             } else if let error = error {
                 print("Notification permission error: \(error)")
             }
         }
+        
+        // Configure notification center delegate
+        UNUserNotificationCenter.current().delegate = self
     }
     
     private func getDeviceIdentifier() {
@@ -1360,12 +1346,12 @@ struct TransactionConfirmationView: View {
                 Text("Transaction Details")
                     .font(.headline)
                     .padding(.bottom, 5)
-                
-                HStack {
-                    Text("Location")
+
+                    HStack {
+                    Text("Product")
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("Proximity: \(beaconDetector.proximityString)")
+                    Text("1 Ticket")
                         .fontWeight(.medium)
                 }
                 .padding(.vertical, 8)
@@ -1374,10 +1360,10 @@ struct TransactionConfirmationView: View {
                 .cornerRadius(8)
                 
                 HStack {
-                    Text("Beacon ID")
+                    Text("Payment Amount")
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("\(beaconDetector.beaconRegion.uuid.uuidString.prefix(8))...")
+                    Text("0.1 SOL")
                         .fontWeight(.medium)
                 }
                 .padding(.vertical, 8)
@@ -1386,16 +1372,18 @@ struct TransactionConfirmationView: View {
                 .cornerRadius(8)
                 
                 HStack {
-                    Text("Transaction Type")
+                    Text("Discount")
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("Payment Processing")
+                    Text("20% off")
                         .fontWeight(.medium)
                 }
                 .padding(.vertical, 8)
                 .padding(.horizontal)
                 .background(Color(.systemGray6))
                 .cornerRadius(8)
+                
+                
             }
             .padding(.horizontal)
             
@@ -1458,6 +1446,19 @@ struct VisualEffectView: UIViewRepresentable {
     
     func updateUIView(_ uiView: UIVisualEffectView, context: UIViewRepresentableContext<Self>) {
         uiView.effect = effect
+    }
+}
+
+// Add UNUserNotificationCenterDelegate conformance
+extension BeaconDetector: UNUserNotificationCenterDelegate {
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        // Show notification even when app is in foreground
+        completionHandler([.banner, .sound, .badge])
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        // Handle notification tap
+        completionHandler()
     }
 }
 
