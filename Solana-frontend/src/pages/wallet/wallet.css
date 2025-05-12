@@ -335,7 +335,7 @@
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   text-align: center;
-  width: 95%;
+  width: 100%;
   box-sizing: border-box;
 }
 
@@ -363,11 +363,13 @@
   margin-bottom: 1.25rem;
   align-items: stretch;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .topup-input-wrapper {
   position: relative;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .topup-input {
@@ -904,9 +906,8 @@
 @media screen and (max-width: 768px) {
   .wallet-page {
     padding: 1rem;
-    min-width: auto;
     width: 100%;
-    overflow-x: hidden;
+    box-sizing: border-box;
   }
 
   .wallet-page h1 {
@@ -946,39 +947,45 @@
   }
 
   .topup-section {
-    width: 95%;
-    margin: 1rem auto;
+    width: 100%;
+    margin: 1rem 0;
     padding: 1rem;
     box-sizing: border-box;
   }
 
+  .topup-container {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
   .topup-input-wrapper {
     width: 100%;
-    max-width: 280px;
+    max-width: none;
   }
 
   .topup-input {
+    width: 100%;
     font-size: 1.1rem;
     padding: 0.875rem 3rem 0.875rem 0.875rem;
   }
 
   .topup-button {
-    max-width: 280px;
+    width: 100%;
+    max-width: none;
     padding: 0.875rem;
   }
 
   .recipient-address {
     width: 100%;
-    padding: 0 0.5rem;
-    box-sizing: border-box;
+    padding: 0.75rem 0;
+    margin: 1rem 0;
   }
 
   .recipient-address span {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    width: 100%;
+    font-size: 0.8rem;
     word-break: break-all;
-    font-size: 0.7rem;
   }
 
   .console-output {
@@ -1001,7 +1008,6 @@
   }
 }
 
-/* Extra small devices */
 @media screen and (max-width: 480px) {
   .wallet-page {
     padding: 0.75rem;
@@ -1029,24 +1035,28 @@
   }
 
   .topup-section {
-    width: 92%;
-    padding: 1rem 0.75rem;
-    margin: 1rem auto;
+    padding: 1rem;
+    margin: 0.75rem 0;
   }
 
   .topup-input-wrapper {
-    max-width: 240px;
+    width: 100%;
+  }
+
+  .topup-input {
+    font-size: 1rem;
+    padding: 0.75rem 2.5rem 0.75rem 0.75rem;
   }
 
   .topup-button {
-    max-width: 240px;
+    padding: 0.75rem;
     font-size: 0.9rem;
   }
 
   .sol-badge {
-    right: 6px;
-    padding: 0.2rem 0.4rem;
-    font-size: 0.75rem;
+    right: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
   }
 }
 

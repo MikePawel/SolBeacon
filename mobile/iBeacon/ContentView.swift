@@ -632,7 +632,7 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
                 let id = identifierForVendor.uuidString
                 DispatchQueue.main.async {
                     self?.deviceIdentifier = id
-                }
+                    }
                 
                 // Save for future use
                 UserDefaults.standard.set(id, forKey: "device_identifier")
