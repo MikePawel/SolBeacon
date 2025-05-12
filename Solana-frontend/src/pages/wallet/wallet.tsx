@@ -570,7 +570,20 @@ export default function Wallet() {
       // Start loading and reset progress
       setTransactionLoading(true);
       setTransactionProgress(10);
-      setTransactionStatus("Initiating transaction...");
+      setTransactionStatus("Checking system health...");
+
+      // Check health endpoint first
+      try {
+        await apiService.checkHealth();
+      } catch (error) {
+        setTransactionLoading(false);
+        uiConsole(
+          `❌ System Health Check Failed\n\n` +
+            `The system is currently unavailable. Please try again later.\n` +
+            `Error: ${error instanceof Error ? error.message : String(error)}`
+        );
+        return;
+      }
 
       setApiLoading(true);
       uiConsole("Sending transaction... Please wait for confirmation.");

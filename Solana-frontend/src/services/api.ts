@@ -145,6 +145,24 @@ class ApiService {
   }
 
   /**
+   * Check protected health endpoint
+   */
+  async checkHealth() {
+    try {
+      const response = await axios.get(`${API_URL}/health/protected`, {
+        headers: {
+          accept: "application/json",
+          ...this.getAuthHeader(),
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error checking health:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Clear JWT token on logout
    */
   clearToken() {
