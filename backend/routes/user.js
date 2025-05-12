@@ -7,6 +7,78 @@ require("dotenv").config();
 // Secret key for JWT signing - ideally from environment variables
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Public health check endpoint
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: API is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "ok"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ */
+router.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * @swagger
+ * /health/protected:
+ *   get:
+ *     summary: Protected health check endpoint requiring JWT
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: API is healthy and user is authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "ok"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     userId:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     walletAddress:
+ *                       type: string
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - No token provided
+ */
+router.get("/health/protected", verifyToken, (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    user: req.user,
+  });
+});
+
 module.exports = router;
 
 /**
