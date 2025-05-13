@@ -9,7 +9,7 @@ import apiService from "../../services/api";
 import "./Header.css";
 
 // Constants
-const clientId = process.env.REACT_APP_WEB3AUTH_CLIENT_ID || "";
+const clientId = String(import.meta.env.VITE_WEB3AUTH_CLIENT_ID);
 
 export default function Header() {
   const [web3auth, setWeb3auth] = useState<Web3Auth | null>(null);
