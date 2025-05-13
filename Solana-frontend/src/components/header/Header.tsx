@@ -109,7 +109,6 @@ export default function Header() {
       const fullAddress = await getAccountAddress(provider);
       const user = await getUserInfo(web3auth);
 
-      // Print user info only on wallet connection using the direct response
       // console.log("User Name:", user?.name);
       // console.log("User Email:", user?.email);
       // console.log("User Wallet Address:", fullAddress);

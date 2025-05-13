@@ -809,7 +809,6 @@ export default function Wallet() {
               stroke="currentColor"
               strokeWidth="2"
             ></svg>
-            <span>PAYvoS6ezYo5kS66dMDpZfwVdshfgpRzs6vDzfZ1tEe</span>
           </div>
           <div className="api-note">
             <small>
