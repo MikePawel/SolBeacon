@@ -809,6 +809,7 @@ export default function Wallet() {
               stroke="currentColor"
               strokeWidth="2"
             ></svg>
+            <span>One click topup payment</span>
           </div>
           <div className="api-note">
             <small>
