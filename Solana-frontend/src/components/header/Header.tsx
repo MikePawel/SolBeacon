@@ -9,9 +9,7 @@ import apiService from "../../services/api";
 import "./Header.css";
 
 // Constants
-const clientId =
-  "BO64YmrgP9IlUvt2__kcdilBAdRuC7Q7-uGOajbW5UNpN69GLTFJmCFF1E0X-V2NLs5OM7VapVZuWCF-KTNT5kg";
-//Free one: BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ
+const clientId = process.env.REACT_APP_WEB3AUTH_CLIENT_ID || "";
 
 export default function Header() {
   const [web3auth, setWeb3auth] = useState<Web3Auth | null>(null);
