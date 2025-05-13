@@ -16,7 +16,7 @@ import "./wallet.css";
 import CreatePassword from "./createPassword";
 
 // Feel free to use this clientId => this one is public anyway
-const clientId = process.env.REACT_APP_WEB3AUTH_CLIENT_ID;
+const clientId = process.env.REACT_APP_WEB3AUTH_CLIENT_ID || "";
 
 // from dashboard: BO64YmrgP9IlUvt2__kcdilBAdRuC7Q7-uGOajbW5UNpN69GLTFJmCFF1E0X-V2NLs5OM7VapVZuWCF-KTNT5kg
 
