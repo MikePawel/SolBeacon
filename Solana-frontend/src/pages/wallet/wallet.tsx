@@ -19,22 +19,6 @@ import CreatePassword from "./createPassword";
 const clientId =
   "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ";
 
-// Function to format console output with clickable links
-const formatConsoleOutput = (output: string) => {
-  if (!output) return "";
-
-  // Regular expression to detect URLs
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-
-  // Replace URLs with HTML link tags
-  const formattedOutput = output.replace(
-    urlRegex,
-    '<a href="$&" target="_blank" rel="noopener noreferrer" class="console-link">$&</a>'
-  );
-
-  return formattedOutput;
-};
-
 export default function Wallet() {
   const [web3auth, setWeb3auth] = useState<Web3Auth | null>(null);
   const [provider, setProvider] = useState<IProvider | null>(null);
