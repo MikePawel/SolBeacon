@@ -6,7 +6,7 @@ export default function Homepage() {
     <>
       {/* Hero Section */}
       <div className="hero-section">
-        <h1>Blockchain & iBeacon Proximity Payments!</h1>
+        <h1>Seamless payments powered by SolBeacon</h1>
         <p className="hero-tagline">
           Revolutionizing proximity-based transactions through seamless
           blockchain integration
