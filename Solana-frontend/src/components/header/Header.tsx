@@ -158,7 +158,7 @@ export default function Header() {
     <header className="header">
       <div className="header-left">
         <Link to="/" className="logo">
-          Solana DApp
+          SolBeacon
         </Link>
       </div>
       <div className="header-right">
