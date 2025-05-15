@@ -5,7 +5,7 @@
 
 ## 📱 Demo
 
-[![SolBeacon Demo Video](https://img.shields.io/badge/Watch-Demo%20Video-red)](https://www.youtube.com/watch?v=YOUR_DEMO_VIDEO_ID)
+[![SolBeacon Demo Video](https://img.shields.io/badge/Watch-Demo%20Video-red)](https://www.loom.com/share/fa54bfaaf445459482e935908177f8ec?sid=64f1adc2-edab-4e10-81e4-4c27f46308d1)
 
 ## 🎯 Pitch Deck
 
