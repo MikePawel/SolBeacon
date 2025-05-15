@@ -46,7 +46,10 @@ export default function Wallet() {
   const [transactionStatus, setTransactionStatus] = useState<string>("");
 
   // Get custom chain configs for your chain
-  const chainConfig = getSolanaChainConfig(0x3)!; // 0x3 Solana Devnet
+  const chainConfig = {
+    ...getSolanaChainConfig(0x3)!,
+    rpcTarget: "https://api.devnet.solana.com",
+  };
 
   // Convert lamports to SOL
   const lamportsToSol = (lamports: string): string => {
