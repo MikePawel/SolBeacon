@@ -65,19 +65,19 @@ The project consists of three main components:
 
 ### Backend Setup
 
-1.  Navigate to the backend directory:
+Navigate to the backend directory:
 
 ```
 cd backend
 ```
 
-1.  Install dependencies:
+Install dependencies:
 
 ```
 npm install
 ```
 
-1.  Create a `.env` file with your configuration:
+Create a `.env` file with your configuration:
 
 ```
 MONGODB_URI=
@@ -87,13 +87,13 @@ FRONTEND_URL=
 JWT_SECRET=
 ```
 
-1.  Start the server:
+Start the server:
 
 ```
 npm run dev
 ```
 
-1.  Access Swagger documentation at:
+Access Swagger documentation at:
 
 ```
 http://localhost:3000/api-docs/
@@ -101,29 +101,31 @@ http://localhost:3000/api-docs/
 
 ### Frontend Setup
 
-1.  Navigate to the Solana frontend directory:
+Navigate to the Solana frontend directory:
 
 ```
 cd Solana-frontend
 ```
 
-1.  Install dependencies:
+Install dependencies:
 
 ```
 npm install
 ```
 
-1.  Start the development server:
+Start the development server:
 
 ```
 npm run dev
 ```
 
-1.  Access the application at:
+Access the application at:
 
 ```
 http://localhost:5174/
 ```
+
+### \+ Setup Web3Auth account
 
 ### iOS App Setup
 
