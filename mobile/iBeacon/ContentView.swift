@@ -184,6 +184,51 @@ struct ContentView: View {
                                 .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
                         )
                         .padding(.horizontal)
+                    } else {
+                        // Unlink Device Button
+                        VStack(alignment: .leading, spacing: 15) {
+                            Text("Device Status")
+                                .font(.headline)
+                                .padding(.top, 5)
+                            
+                            Divider()
+                            
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                Text("Device Linked")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                            }
+                            
+                            Button(action: {
+                                logout()
+                            }) {
+                                HStack {
+                                    Image(systemName: "link.badge.minus")
+                                    Text("Unlink Device")
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.red)
+                                .cornerRadius(8)
+                            }
+                            
+                            if let loginResponse = loginResponse {
+                                Text(loginResponse)
+                                    .foregroundColor(.secondary)
+                                    .font(.caption)
+                            }
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: Color(.systemGray4).opacity(0.2), radius: 10, x: 0, y: 2)
+                        )
+                        .padding(.horizontal)
                     }
                     
                     // Enhanced Transaction Status Card
@@ -674,6 +719,9 @@ struct ContentView: View {
                         if KeychainManager.shared.saveToken(token) {
                             self.loginResponse = "Token saved successfully"
                             self.isLoggedIn = true
+                            // Update beacon detector authentication state
+                            self.beaconDetector.isAuthenticated = true
+                            self.beaconDetector.startScanning()
                             // Clear sensitive data
                             self.email = ""
                             self.password = ""
@@ -693,6 +741,9 @@ struct ContentView: View {
     private func logout() {
         if KeychainManager.shared.deleteToken() {
             isLoggedIn = false
+            // Update beacon detector authentication state
+            beaconDetector.isAuthenticated = false
+            beaconDetector.stopScanning()
             loginResponse = "Logged out successfully"
         } else {
             loginResponse = "Failed to logout"
@@ -754,6 +805,7 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var transactionStatus: [String]? = nil
     @Published var pendingTransaction = false
     @Published var processingTransaction = false
+    @Published var isAuthenticated = false  // Add authentication state
     
     // Internal payment service
     private var paymentService: InternalPaymentService?
@@ -788,6 +840,9 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         beaconRegion.notifyOnExit = true
         beaconRegion.notifyEntryStateOnDisplay = true
         
+        // Check authentication status
+        checkAuthenticationStatus()
+        
         // Always do setup operations asynchronously to avoid blocking main thread
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
@@ -797,6 +852,28 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
         
         print("BeaconDetector initialized")
+    }
+    
+    private func checkAuthenticationStatus() {
+        DispatchQueue.main.async {
+            self.isAuthenticated = KeychainManager.shared.getToken() != nil
+            if self.isAuthenticated {
+                self.startScanning()
+            } else {
+                self.stopScanning()
+            }
+        }
+    }
+    
+    func stopScanning() {
+        if isMonitoring {
+            locationManager.stopMonitoring(for: beaconRegion)
+            locationManager.stopRangingBeacons(satisfying: beaconRegion.beaconIdentityConstraint)
+            isMonitoring = false
+            isBeaconDetected = false
+            proximityString = "Unknown"
+            lastSentProximity = nil
+        }
     }
     
     private func setupLocationManager() {
@@ -883,6 +960,12 @@ class BeaconDetector: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
     
     func startScanning() {
+        // Only start scanning if authenticated
+        guard isAuthenticated else {
+            print("Cannot start scanning - device not authenticated")
+            return
+        }
+        
         if isMonitoring {
             return // Already monitoring
         }
