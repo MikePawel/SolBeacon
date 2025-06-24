@@ -292,12 +292,16 @@ struct ContentView: View {
                                             .font(.headline)
                                             .foregroundColor(.primary)
                                         
-                                        Text("Beacon detected nearby")
+                                        Text("Tap to review transaction")
                                             .font(.subheadline)
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(.blue)
                                     }
                                     
                                     Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.blue)
+                                        .font(.subheadline)
                                 }
                                 
                                 // Timeline component
@@ -342,6 +346,9 @@ struct ContentView: View {
                             .padding()
                             .background(Color(.systemGray6).opacity(0.5))
                             .cornerRadius(12)
+                            .onTapGesture {
+                                showTransactionConfirmation = true
+                            }
                             .onAppear {
                                 showTransactionConfirmation = true
                             }
